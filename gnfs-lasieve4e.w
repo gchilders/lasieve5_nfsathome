@@ -34,6 +34,29 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 @
 @c
+#ifdef HAVE_BOINC
+	#include <stdarg.h>
+	#ifdef _WIN32
+		#include "boinc_win.h"
+		#include "boinc_api.h"
+		#include "filesys.h"
+	#else
+		#include "boinc_api.h"
+		#include "filesys.h"
+	#endif
+	//prototypes
+	void boincstop(int retcode);
+	int boincstart(int argc_init, char **argv);
+	void boincstatus(double percent);
+	int main_lasieve(int argc, char **argv);
+	#define FILE_WORKUNIT "input_data"
+	#define FILE_RESULT "output_data"
+	static char path_in[500];
+	static char path_out[500];
+	#define exit(i) boincstop(i)
+	#define fopen(i,j) boinc_fopen(i,j)
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef SI_MALLOC_DEBUG
@@ -387,13 +410,46 @@ int parse_q_from_line(char *buf) {
   return 1;
 }  
 
-main(int argc,char **argv)
+#ifdef HAVE_BOINC
+/* this main talks with BOINC */
+//you must ensure this is enough
+#define ARGVCOUNT 12
+
+int main(int argc, char **argv)
+{
+	int app_argc;
+	char* app_argv[ARGVCOUNT];
+	int retcode;
+	app_argv[0] = argv[0];
+	app_argv[1] = argv[1];
+	app_argv[2] = argv[2];
+	app_argv[3] = argv[3];
+	app_argv[4] = argv[4];
+	app_argv[5] = argv[5];
+	app_argc= boincstart(6,app_argv);
+	if(argc < 0) {
+		retcode = 1;
+	} else {
+		retcode= main_lasieve(app_argc,app_argv);
+	}
+	boincstatus(1.0);
+	boincstop(retcode);
+	return retcode;
+}
+
+int main_lasieve(int argc, char **argv)
+#else
+int main(int argc, char **argv)
+#endif
 {
   u16_t zip_output,force_aFBcalc;
   u16_t catch_signals;
   u32_t all_spq_done;
   u32_t n_spq,n_spq_discard;
   double tStart, tNow, lastReport;
+#ifdef HAVE_BOINC
+  double pct;
+#endif
   
 #if defined (_MSC_VER) && defined (_DEBUG)
   int tmpDbgFlag;
@@ -565,16 +621,31 @@ main(int argc,char **argv)
 	tNow = sTime();
     if (tNow > lastReport + 5.0) {
 	   lastReport = tNow;
+#ifdef HAVE_BOINC
+	//periodically callback into boinc to show we are alive
+	pct=((double)(special_q - first_spq))/((double)sieve_count);
+	boincstatus(pct);
+#else
        if(verbose) {
 	       fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel) ", 
 		      (unsigned int)yield, (unsigned int)special_q, (tNow - tStart)/yield);
 	       fflush(stderr);
        }
+#endif
     }
     if (n_spq>=spq_count) break;
   }
+#ifdef HAVE_BOINC
+    //periodically callback into boinc to show we are alive
+    pct=((double)(special_q - first_spq))/((double)sieve_count);
+    boincstatus(pct);
+    fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel, %10.5f %% done of %d)\n", 
+    	    (unsigned int)yield, (unsigned int)special_q, 
+			(tNow - tStart)/yield, (double)(pct*100.0), sieve_count);
+#else
   fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel) \n", 
 	    (unsigned int)yield, (unsigned int)special_q, (sTime() - tStart)/yield);
+#endif
   free(r);
 }
 
@@ -4919,3 +4990,75 @@ dumpsieve(u32_t j_offset,u32_t side)
   fclose(ofile);
   free(ofn);
 }
+
+#ifdef HAVE_BOINC
+
+void fail(const char *str,...)
+{
+	va_list ap;
+	va_start(ap,str);
+	vfprintf(stderr,str,ap);
+	va_end(ap);
+	fprintf(stderr,"\n");
+	fflush(stderr);
+	boinc_finish(1);
+}
+
+int boincstart(int argc_init, char **argv)
+{
+	int status,i;
+	status=boinc_init();
+	if(status) {
+		fail("boinc_init() failed: %d",status);
+		return -1;
+	}
+	fprintf(stderr, "boinc initialized\n");
+
+	status=boinc_resolve_filename(FILE_WORKUNIT, path_in,  sizeof(path_in)  );
+	if(status) {
+		fail("cannot resolve workunit file name");
+	}
+
+	status=boinc_resolve_filename(FILE_RESULT,   path_out, sizeof(path_out) );
+	if(status) {
+		fail("cannot resolve result file name");
+	}
+
+	fprintf(stderr, "work files resolved, now working\n");
+
+	//construct arg list
+	argv[argc_init++]="-R";
+	argv[argc_init++]=path_in;
+	argv[argc_init++]="-o";
+	argv[argc_init++]=path_out;
+
+	for(i=0;i<argc_init;i++) {
+		fprintf(stderr,"-> %s\n",argv[i]);
+	}
+
+	return argc_init;
+}
+
+void boincstop(int retcode)
+{
+	boinc_finish(retcode);
+}
+
+void boincstatus(double percent)
+{
+	if (percent < 1.0) boinc_fraction_done(percent);
+
+#ifdef _WIN32
+		Sleep(1);
+#else
+		sleep(1);
+#endif
+
+	if(boinc_time_to_checkpoint()) {
+		//c'est l'appli qui s'en occupe elle m?me
+		fflush(ofile);
+		boinc_checkpoint_completed();
+	}
+}
+
+#endif

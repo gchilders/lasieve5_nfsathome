@@ -20,6 +20,18 @@ to report how things are proceeding.
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef HAVE_BOINC
+        #include <stdarg.h>
+        #ifdef _WIN32
+                #include "boinc_win.h"
+                #include "boinc_api.h"
+                #include "filesys.h"
+        #else
+                #include "boinc_api.h"
+                #include "filesys.h"
+        #endif
+#endif
+
 void *xmalloc(size_t size);
 void *xvalloc(size_t size);
 void *xcalloc(size_t n,size_t s);
@@ -144,7 +156,11 @@ void complain(char *fmt,...)
   va_start(arglist,fmt);
   vfprintf(stderr,fmt,arglist);
   if(logfile != NULL) vfprintf(logfile,fmt,arglist);
+#ifdef HAVE_BOINC 
+    boinc_finish(1);       
+#else                
   exit(1);
+#endif            
 }
 
 @ Use this function to report programming errors.
@@ -155,7 +171,11 @@ void Schlendrian(char *fmt,...)
   va_start(arglist,fmt);
   vfprintf(stderr,fmt,arglist);
   if(logfile != NULL) vfprintf(logfile,fmt,arglist);
+#ifdef HAVE_BOINC 
+    boinc_finish(1);       
+#else                
   abort();
+#endif          
 }
 
 @ Status logs are printed to |stderr| or written to a logbook in memory.
