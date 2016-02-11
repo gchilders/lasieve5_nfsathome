@@ -74,6 +74,7 @@ this distribution, however.
 void MMX_TdAllocate(int,size_t,size_t);
 u16_t* MMX_TdInit(int,u16_t*,u16_t*,u32_t*,int);
 void MMX_TdUpdate(int,int);
+u32_t* MMX_Td(u32_t*,int,u16_t);
 #define MMX_TD
 #endif
 

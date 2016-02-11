@@ -40,7 +40,7 @@ SRCFILES=modinv32.c gcd32.c psp.c montgomery_mul.[ch] \
 	tex $<
 
 %.s: %.asm
-	m4 -Dn_i_bits=0 ls-defs.asm $^ > $@
+	m4 -g -Dn_i_bits=0 ls-defs.asm $^ > $@
 
 %.o: %.s
 	cc -c $^
@@ -56,10 +56,10 @@ liblasieve.a: modinv32.o gcd32.o psp.o montgomery_mul.o \
 	ar rcs $@ $^
 
 laschedI%.o: lasched.c lasched.h siever-config.h ../if.h
-	$(CC) $(CFLAGS) -DI_bits=$* -g -c -o $@ $<
+	$(CC) $(CFLAGS) -DI_bits=$* -c -o $@ $<
 
 medschedI%.o: medsched.c medsched.h siever-config.h ../if.h
-	$(CC) $(CFLAGS) -DI_bits=$* -g -c -o $@ $<
+	$(CC) $(CFLAGS) -DI_bits=$* -c -o $@ $<
 
 liblasieveI%.a:	laschedI%.o medschedI%.o
 	ar rcs $@ $^

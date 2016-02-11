@@ -10,7 +10,7 @@
 ifdef DEBUG
 CFLAGS= -DGATHER_STAT -DDEBUG -g
 else
-CFLAGS= -g -O3 -DGATHER_STAT
+CFLAGS= -O3 -DGATHER_STAT
 endif
 #CFLAGS= -DGATHER_STAT -DDEBUG -g
 
@@ -151,7 +151,7 @@ gnfs-lasieve4I%g: gnfs-lasieve4gI%.o if.o input-poly.o redu2.o \
 	$(CC) -o $@ $^ $(GMP_LIB) -lm
 
 mpqsz.o: mpqs.c asm/mpqs-config.h
-	gcc -O2 -DMPQS_STAT -DMPQS_ZEIT -c -o $@ $<
+	$(CC) -O2 -DMPQS_STAT -DMPQS_ZEIT -c -o $@ $<
 #	gcc -g -DMPQS_STAT -DMPQS_ZEIT -c -o $@ $<
 
 mpqstest: mpqstest.o mpqsz.o if.o mpz-ull.o asm/liblasieve.a
@@ -161,7 +161,7 @@ mpqst: mpqst.o mpqsz.o if.o asm/liblasieve.a
 	$(CC) -o $@ $^ $(GMP_LIB) -lm
 
 mpqszt.o: mpqs.c  asm/mpqs-config.h
-	gcc -O2 -DTOTAL_STAT -DMPQS_ZEIT -c -o $@ $<
+	$(CC) -O2 -DTOTAL_STAT -DMPQS_ZEIT -c -o $@ $<
 
 tmpqs: mpqst.o mpqszt.o if.o asm/liblasieve.a
 	$(CC) -o $@ $^ $(GMP_LIB) -lm

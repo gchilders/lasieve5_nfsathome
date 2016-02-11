@@ -50,7 +50,7 @@ SRCFILES=modinv1002.asm gcd32.c ri-aux.asm psp.c montgomery_mul.[ch] \
 	tex $<
 
 %.s: %.asm
-	m4 -Dn_i_bits=0 ls-defs.asm $^ > $@
+	m4 -g -Dn_i_bits=0 ls-defs.asm $^ > $@
 
 %.o: %.s
 	cc -c $^
@@ -71,52 +71,52 @@ liblasieve.a: modinv1002.o gcd32.o ri-aux.o psp.o montgomery_mul.o \
 	ar rcs $@ $^
 
 laschedI%.o: lasched.c lasched.h siever-config.h ../if.h
-	$(CC) $(CFLAGS) -DI_bits=$* -g -c -o $@ $<
+	$(CC) $(CFLAGS) -DI_bits=$* -c -o $@ $<
 
 lasched0I%.s: ls-defs.asm lasched0.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 lasched1I%.s: ls-defs.asm lasched1.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 lasched2I%.s: ls-defs.asm lasched2.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 lasched3I%.s: ls-defs.asm lasched3.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 medschedI%.o: medsched.c medsched.h siever-config.h ../if.h
-	$(CC) $(CFLAGS) -DI_bits=$* -g -c -o $@ $<
+	$(CC) $(CFLAGS) -DI_bits=$* -c -o $@ $<
 
 medsched0I%.s: ls-defs.asm medsched0.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 search0I%.s: ls-defs.asm search0.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 slinieI%.s: ls-defs.asm slinieG.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 slinie3I%.s: ls-defs.asm slinie3A.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 slinie2I%.s: ls-defs.asm slinie2A.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 slinie1I%.s: ls-defs.asm slinie1A.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 tdslinie1I%.s: ls-defs.asm tdslinie1.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 tdslinie2I%.s: ls-defs.asm tdslinie2.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 tdslinie3I%.s: ls-defs.asm tdslinie3.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 tdslinieI%.s: ls-defs.asm tdslinie.asm
-	m4 -Dn_i_bits=`expr $* - 1` $^ > $@
+	m4 -g -Dn_i_bits=`expr $* - 1` $^ > $@
 
 liblasieveI%.a:	laschedI%.o lasched0I%.o lasched1I%.o lasched2I%.o \
 	lasched3I%.o medschedI%.o medsched0I%.o slinieI%.o search0I%.o \
