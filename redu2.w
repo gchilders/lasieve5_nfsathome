@@ -47,6 +47,7 @@ reduce2(i32_t *a0_ptr,i32_t *b0_ptr,i32_t *a1_ptr,i32_t *b1_ptr,
 	i64_t a0,i64_t b0,i64_t a1,i64_t b1,double sigma)
 {
   double a0sq,a1sq,s;
+  i32_t j=0;
 
   a0sq=((double)a0)*a0;
   a0sq+=sigma*((double)b0)*b0;
@@ -57,7 +58,7 @@ reduce2(i32_t *a0_ptr,i32_t *b0_ptr,i32_t *a1_ptr,i32_t *b1_ptr,
     s=((double)a0)*a1;
     s+=sigma*((double)b0)*b1;
 
-    n_iter++;
+    if(++j>1024) break; /* n_iter++; */
     if(a0sq<a1sq) {
       i64_t k;
 
@@ -78,6 +79,8 @@ reduce2(i32_t *a0_ptr,i32_t *b0_ptr,i32_t *a1_ptr,i32_t *b1_ptr,
       a0sq+=sigma*((double)b0)*b0;
     }
   }
+
+  n_iter += j;
 
   if(b0<0) {
     b0=-b0;

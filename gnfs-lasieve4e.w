@@ -46,6 +46,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include <limits.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 #ifdef LINUX
 #include <endian.h>
 #endif
@@ -122,6 +123,7 @@ double *(poly_f[2]),poly_norm[2];
 i32_t poldeg[2],poldeg_max;
 /* Should we save the factorbase after it is created? */
 u32_t keep_factorbase;
+u32_t g_resume;
 #define MAX_LPFACTORS 3
 static mpz_t rational_rest,algebraic_rest;
 mpz_t factors[MAX_LPFACTORS];
@@ -145,6 +147,9 @@ size_t input_line_alloc=0;
 static u32_t ncand;
 static u16_t *cand;
 static unsigned char *fss_sv, *fss_sv2;
+u32_t process_no;
+char *sysload_cmd;
+double sieveStartTime;
 
 @ It will also be necessary to sort them.
 @c
@@ -260,6 +265,7 @@ static u32_t n_i,n_j,i_bits,j_bits;
 
 void Usage()
 {
+  printf("Rescale moved from R to Z.\n");
   complain("Usage");
 }
 
@@ -307,14 +313,105 @@ static clock_t last_clock;
 extern u64_t MMX_TdNloop;
 #endif
 
+/*******************************************************/
+double sTime()
+/*******************************************************/
+#if 0 && !defined (_MSC_VER) && !defined (__MINGW32__) && !defined (MINGW32)
+{
+  static struct  timeval  this_tv;
+  static struct  timezone dumbTZ;
+  double t;
+  
+  gettimeofday(&this_tv, &dumbTZ);
+  t = this_tv.tv_sec + 0.000001*this_tv.tv_usec;
+  return t;
+}
+#else
+{
+  return clock() / (double)CLOCKS_PER_SEC;
+}
+#endif
+
+/**************************************************/
+void logTotalTime()
+/**************************************************/
+{
+  double t=sTime()-sieveStartTime;
+  FILE *fp=fopen("ggnfs.log", "a");
+  
+  fprintf(fp, "\tLatSieveTime: %ld\n", (long)t);
+  fclose(fp);
+}
+
+/**************************************************/
+int parse_q_from_line(char *buf) {
+/**************************************************/
+  char *p, *tmp, *next_field;
+  u32_t q, q0, i, side;
+  static int first=0;
+  
+  for(p=tmp=buf; *p && isspace(*p); p++);
+  if(!*p) return 0; /* empty line, skip */
+  
+  side = (special_q_side == RATIONAL_SIDE) ? 0 : 1;
+  for(i=0; *p; p++) {
+    if(*p == ':') {
+      if(i++ == side) tmp = p; /* we will only scan this section for a q0 */
+    } else if(!(*p == '-' || *p == ',' || isspace(*p) || isxdigit(*p))) {
+      if(first++ == 0) printf(" Warning! some corrupt lines in the original file\n");
+      return -1;
+    }
+  }
+  if(i!=2) {
+    printf(" Warning: an incomplete line in the original file; ");
+	printf("if just a few, it's ok, they will be skipped\n");
+    return -1;           /* must have two ':' some ',' and hexdigits */
+  }
+  
+  q0 = first_spq;
+  do {
+    q = strtoul(tmp + 1, &next_field, 16);
+    if(q >= first_spq && q < first_spq+sieve_count)
+      q0 = q;
+    tmp = next_field;
+  } while(tmp[0] == ',' && isxdigit(tmp[1]));
+  
+  /* I've seen cases when q0 is not the last reported in the comma-separated list */
+  /* However, the closer it is to the end of the line the more likely it was the true q0 */
+  /* In 99% cases it is the last value, but we don't want to depend on that */
+  
+  if(q0 > first_spq && q0 < first_spq+sieve_count) {
+    sieve_count -= (q0 - first_spq);
+    first_spq = q0;
+  }
+  return 1;
+}  
+
 main(int argc,char **argv)
 {
   u16_t zip_output,force_aFBcalc;
   u16_t catch_signals;
   u32_t all_spq_done;
   u32_t n_spq,n_spq_discard;
-  char *sysload_cmd;
-  u32_t process_no;
+  double tStart, tNow, lastReport;
+  
+#if defined (_MSC_VER) && defined (_DEBUG)
+  int tmpDbgFlag;
+  tmpDbgFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+  /*
+    tmpDbgFlag |= _CRTDBG_CHECK_ALWAYS_DF;
+    tmpDbgFlag |= _CRTDBG_CHECK_CRT_DF;
+    tmpDbgFlag |= _CRTDBG_DELAY_FREE_MEM_DF;
+  */
+  tmpDbgFlag |= _CRTDBG_LEAK_CHECK_DF;
+  _CrtSetDbgFlag(tmpDbgFlag);
+#endif
+  
+  n_spq = 0;
+  n_spq_discard = 0;
+  
+  sieveStartTime = sTime();
+  
 #ifdef STC_DEBUG
   debugfile=fopen("rtdsdebug","w");
 #endif
@@ -360,6 +457,7 @@ main(int argc,char **argv)
     signal(SIGTERM,terminate_sieving);
     signal(SIGINT,terminate_sieving);
   }
+  tStart = lastReport = sTime();
   for(;
       special_q<last_spq && special_q != 0;
       special_q=(last_spq>>32 ? nextq64(special_q+1) :
@@ -430,11 +528,11 @@ main(int argc,char **argv)
 	if(termination_condition==USER_INTERRUPT)
 	  @<Save this special q and finish@>@;
 	else {/* |termination_condition==SCHED_PATHOLOGY| */
-	  char *cmd;
-	  asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",basename,
-		   special_q_side,special_q,r[root_no]);
-	  system(cmd);
-	  free(cmd);
+	  //char *cmd;
+	  //asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",basename,
+		//   special_q_side,special_q,r[root_no]);
+	  //system(cmd);
+	  //free(cmd);
 	  continue; /* Next root_no. */
 	}
       }  
@@ -451,11 +549,11 @@ main(int argc,char **argv)
       }
       n_spq++;
       @<Calculate |spq_i| and |spq_j|@>@;
-      fprintf(ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
-	      special_q,r[root_no],a0,b0,a1,b1);
+      // fprintf(ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
+	  //    special_q,r[root_no],a0,b0,a1,b1);
       @<Do the sieving and td@>@;
-      fprintf(ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
-	      special_q,r[root_no],a0,b0,a1,b1);
+      //fprintf(ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
+	  //    special_q,r[root_no],a0,b0,a1,b1);
       if (n_spq>=spq_count) break;
     }
     if(root_no<nr) {
@@ -464,8 +562,19 @@ main(int argc,char **argv)
 	 failed. */
       break; /* Out of the loop over |special_q|. */
     }
+	tNow = sTime();
+    if (tNow > lastReport + 5.0) {
+	   lastReport = tNow;
+       if(verbose) {
+	       fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel) ", 
+		      (unsigned int)yield, (unsigned int)special_q, (tNow - tStart)/yield);
+	       fflush(stderr);
+       }
+    }
     if (n_spq>=spq_count) break;
   }
+  fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel) \n", 
+	    (unsigned int)yield, (unsigned int)special_q, (sTime() - tStart)/yield);
   free(r);
 }
 
@@ -631,6 +740,7 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
   special_q_side=NO_SIDE;
   sigma=0;
   keep_factorbase=0;
+  g_resume=0;
   basename=NULL;
   first_spq=0;
   sieve_count=1;
@@ -653,7 +763,7 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 #define NumRead16(x) if(sscanf(optarg,"%hu",&x)!=1) Usage()
 
   append_output=0;
-  while((option=getopt(argc,argv,"C:FJ:L:M:N:P:R:S:ab:c:f:i:kn:o:q:rt:vz"))!=-1) {
+  while((option=getopt(argc,argv,"C:FJ:L:M:N:P:RS:Z:ab:c:f:i:kn:o:q:rt:vz"))!=-1) {
     switch(option) {
     case 'C':
       if (sscanf(optarg,"%u",&spq_count)!=1)  Usage();
@@ -674,6 +784,8 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       NumRead16(first_psp_side);
       break;
     case 'R':
+	  g_resume = 1; break;
+    case 'Z':
       if (sscanf(optarg,"%u:%u",rescale,rescale+1)!=2) {
         rescale[1]=0;
         if (sscanf(optarg,"%u",rescale)!=1) Usage();
@@ -745,19 +857,39 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       break;
     }
   }
+  
+  if(verbose) { /* first rudimentary test of automatic $Rev reporting */
+      fprintf(stderr, "gnfs-lasieve4I%de (with asm64): L1_BITS=%d,\n", I_bits, L1_BITS);
+  }
+
+#define LINE_BUF_SIZE 300
+    
+    if (g_resume != 0) {
+      char buf[LINE_BUF_SIZE];
+      int ret;
+      
+      if (zip_output != 0)
+	complain("Cannot resume gzipped file. gunzip, and retry without -z\n");
+      if (ofile_name == NULL)
+	complain("Cannot resume without the file name\n");
+      if (strcmp(ofile_name, "-") == 0)
+	complain("Cannot resume using stdout\n");
+      if ((ofile = fopen(ofile_name, "ab+")) == NULL)
+	complain("Cannot open %s for append: %m\n", ofile_name);
+      while(fgets(buf, LINE_BUF_SIZE, ofile)) {
+	    ret = parse_q_from_line(buf);
+      }
+      if(ret < 0) fprintf(ofile, "\n"); /* encapsulating the last incomplete line */
+      printf(" Resuming with -f %d -c %d\n", first_spq, sieve_count);
+      first_spq1 = first_spq;
+    }
+  
   if(J_bits==U32_MAX) J_bits=I_bits-1;
   if(first_psp_side==2) first_psp_side=first_mpqs_side;
 #ifndef I_bits
 #error Must #define I_bits
 #endif
-  last_spq=first_spq+sieve_count;
-#if 0
-  if(last_spq>=I32_MAX) {
-    /* CAVE: Maybe this can be relaxed somewhat without invalidating
-       our reduction code, but better err on the safe side. */
-    complain("Cannot handle special q >= %d\n",I32_MAX/2);
-  }
-#endif
+
   if(optind<argc && basename==NULL) {
     basename=argv[optind];
     optind++;
@@ -778,7 +910,7 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
   mpz_ull_init();
   mpz_init(rational_rest);
   mpz_init(algebraic_rest);
-  input_poly(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
+  //input_poly(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
 #if 0
   if(poldeg[1]>1) {
     if(poldeg[0]==1) {
@@ -793,25 +925,90 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
     }
   }
 #endif
-  skip_blanks_comments(&input_line,&input_line_alloc,input_data);
-  if(input_line == NULL ||
-     sscanf(input_line,"%hu %f %f %hu %hu\n",&(sieve_min[1]),
-            FB_bound+1,&(sieve_report_multiplier[1]),
-            &(max_primebits[1]),&(max_factorbits[1])) != 5) {
-    errprintf("Rational sieve parameters like\n");
-    errprintf("sievemin FBbound sieverest_multiplier max_prime_bits max_factorbits\n");
-    errprintf("eg. 20     1e6    3.2                  30             50\n");
-    complain("lacking from input file %s\n",basename);
-  }
-  if(fscanf(input_data,"%hu %f %f %hu %hu\n",&(sieve_min[0]),
-            FB_bound,&(sieve_report_multiplier[0]),
-            &(max_primebits[0]),&(max_factorbits[0])) != 5) {
-     errprintf("Algebraic sieve parameters like\n");
-     errprintf("sievemin FBbound sieverest_multiplier max_prime_bits max_factorbits\n");
-     errprintf("eg. 20     1e6    3.2                  30             50\n");
-     complain("lacking from input file %s\n",basename);
-  }
+  //skip_blanks_comments(&input_line,&input_line_alloc,input_data);
+  
+  fclose(input_data);
+    { FILE *fp;
+    char token[256], value[512], thisLine[1024];
+    
 
+    sieve_min[0] = sieve_min[1]=0;
+    
+    if (!(fp = fopen(basename, "rb"))) {
+      printf("Error opening %s for read!\n", basename);
+      return -1;
+    }
+    input_poly(N, poly, poldeg, poly + 1, poldeg + 1, m, fp);
+    rewind(fp);
+    while (!(feof(fp))) {
+      thisLine[0] = 0;
+      fgets(thisLine, 1023, fp);
+      /* Special case: If there's a polynomial, handle it seperately: */
+      if (strncmp(thisLine, "START_POLY", 10) == 0) {
+	while (!(feof(fp)) && strncmp(thisLine, "END_POLY", 8)) 
+	  fgets(thisLine, 1023, fp);
+      } else  if ((sscanf(thisLine, "%255s %511s", token, value) == 2) && 
+		  (thisLine[0] != '#')) {
+	
+	token[sizeof(token)-1] = 0;
+	if (strncmp(token, "skew:", 5) == 0) {
+	  sigma = (float)atof(value);
+	} else if (strncmp(token, "q0:", 3) == 0) {
+	  first_spq = atoll(value);
+	  first_spq1= first_spq;
+	  first_root= 0;
+	  
+	} else if (strncmp(token, "qintsize:", 9) == 0) {
+	  sieve_count = atol(value);
+	} else if ((strncmp(token, "skip0:", 6) == 0) ||
+		   (strncmp(token, "askip:", 6) == 0)) {
+	  sieve_min[0] = atol(value);
+	} else if ((strncmp(token, "skip1:", 6) == 0) ||
+		   (strncmp(token, "rskip:", 6) == 0)) {
+	  sieve_min[1] = atol(value);
+	} else if ((strncmp(token, "lim0:", 5) == 0) ||
+		   (strncmp(token, "alim:", 5) == 0)) {
+	  FB_bound[0] = (float)atol(value);
+	} else if ((strncmp(token, "lim1:", 5) == 0)||
+		   (strncmp(token, "rlim:", 5) == 0)) {
+	  FB_bound[1] = (float)atof(value);
+	} else if ((strncmp(token, "lpb0:", 5) == 0) ||
+		   (strncmp(token, "lpba:", 5) == 0)) {
+	  max_primebits[0] = atoi(value);
+	} else if ((strncmp(token, "lpb1:", 5) == 0) ||
+		   (strncmp(token, "lpbr:", 5) == 0)) {
+	  max_primebits[1] = atoi(value);
+	} else if ((strncmp(token, "mfb0:", 5) == 0) ||
+		   (strncmp(token, "mfba:", 5) == 0)) {
+	  max_factorbits[0] = atoi(value);
+	} else if ((strncmp(token, "mfb1:", 5) == 0) ||
+		   (strncmp(token, "mfbr:", 5) == 0)) {
+	  value[sizeof(value)-1] = 0;
+	  max_factorbits[1] = atoi(value);
+	} else if ((strncmp(token, "lambda0:", 8) == 0) ||
+		   (strncmp(token, "alambda:", 8) == 0)) {
+	  sieve_report_multiplier[0] = (float)atof(value);
+	} else if ((strncmp(token, "lambda1:", 8) == 0) ||
+		   (strncmp(token, "rlambda:", 8) == 0)) {
+	  sieve_report_multiplier[1] = (float)atof(value);
+	} 
+#ifdef _NO
+	else {
+	  printf("Warning: Ignoring input line:\n%s\n", thisLine);
+	}
+#endif
+    }
+    }
+    fclose(fp);
+    }
+    last_spq= first_spq+sieve_count;
+#if 0
+  if(last_spq>=I32_MAX) {
+    /* CAVE: Maybe this can be relaxed somewhat without invalidating
+       our reduction code, but better err on the safe side. */
+    complain("Cannot handle special q >= %d\n",I32_MAX/2);
+  }
+#endif
   for(i=0;i<2;i++) {
     if(FB_bound[i]<4 || sieve_report_multiplier[i]<=0) {
     complain("Please set all bounds to reasonable values!\n");
@@ -829,11 +1026,13 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       Usage();
     }
     if((u64_t)(FB_bound[special_q_side])>first_spq) {
-      complain("Special q lower bound %llu below rFB bound %g\n",
-	       first_spq,FB_bound[special_q_side]);
+      FB_bound[special_q_side]=(float) first_spq-1;
+	  if(verbose) printf("Warning:  lowering FB_bound to %llu.\n",first_spq-1);
+	  //complain("Special q lower bound %llu below rFB bound %g\n",
+	  //       first_spq,FB_bound[special_q_side]);
     }
   }
-  fclose(input_data);
+  //fclose(input_data);
   if(poldeg[0]<poldeg[1]) poldeg_max=poldeg[1];
   else poldeg_max=poldeg[0];
   /* CAVE You should better make sure that sieving is carried out only
@@ -903,16 +1102,24 @@ if(sieve_count != 0) {
     }
   }
   if(zip_output==0) {
+      if (g_resume != 0) {
+        goto done_opening_output;
+      }
     if(append_output>0) {
       ofile=fopen(ofile_name,"a");
-    } else ofile=fopen(ofile_name,"w");
+    } else {
+	  if ((ofile = fopen(ofile_name, "r")) != NULL)
+	    complain(" Will not overwrite existing file %s for output;" 
+		  "rename it, move it away, or use -R option (resume)\n", ofile_name);
+	  ofile=fopen(ofile_name,"w");
+	}
     if(ofile==NULL) complain("Cannot open %s for output: %m\n",ofile_name);
   } else {
     if((ofile=popen(ofile_name,"w"))==NULL)
     complain("Cannot exec %s for output: %m\n",ofile_name);
   }
   done_opening_output:
-  fprintf(ofile,"F 0 X %u 1\n",poldeg[0]);
+  fprintf(ofile,"");
 }
 
 @ For this version of the siever, we strive for cache efficiency of
@@ -1291,7 +1498,7 @@ u32_t **(fbi_logbounds[2]);
       fbi_logbounds[side][d][l+1]=ub;
     }
   }
-  logbook(-1,"Side %u maxl %lf\n",side,FB_maxlog[side]);
+  // logbook(-1,"Side %u maxl %lf\n",side,FB_maxlog[side]);
 }
 
 @ The sieve schedule is a |u16_t ***xschedule|, where x stands for r or a.
@@ -4534,6 +4741,34 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
 #endif
 
   yield++;
+
+  mpz_out_str(ofile, 10, sr_a);
+  fprintf(ofile, ",");
+  mpz_out_str(ofile, 10, sr_b);
+  
+#define OBASE 16
+  for(s= 0;s<2;s++) {
+    int num = 0;
+    u32_t *x = fbp_buffers_ub[1-s];
+
+    fprintf(ofile, ":");
+    while (num < nlp[1-s]) {
+      if (num>0) fprintf(ofile, ",");
+      mpz_out_str(ofile, OBASE, large_primes[1-s][num]);
+      num++;
+    }
+    while (x-- != fbp_buffers[1-s]) {
+      if ((unsigned int)*x <1000) continue;
+      if (num>0) fprintf(ofile, ",");
+      fprintf(ofile, "%x", (unsigned int)*x);
+      num++;
+    }
+  }
+  fprintf(ofile, "\n");
+}
+
+// Old CWI output
+/*
 #ifdef OFMT_CWI
 #define CWI_LPB 0x100000
 #define OBASE 10
@@ -4578,7 +4813,9 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
 #ifndef OFMT_CWI
         fprintf(ofile," %llX",special_q);
 #else
+*/
 /* CAVE: not tested */
+/*
         if (special_q>CWI_LPB) fprintf(ofile," %llu",special_q);
 #endif
     }
@@ -4618,6 +4855,7 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
   fprintf(ofile,";\n");
 #endif
 }
+*/
 
 @
 @<Global declarations@>=
