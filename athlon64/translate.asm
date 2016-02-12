@@ -134,7 +134,7 @@ loop8:
 	shlq $56,aux2
 	addq aux2,aux1
 	movq aux1,(array)
-.IF 0
+.if 0
 	movzbq (array),%rax
 	movb (tab,%rax),%cl
 	movb %cl,(array)
@@ -159,7 +159,7 @@ loop8:
 	movzbq 7(array),%rax
 	movb (tab,%rax),%dl
 	movb %dl,7(array)
-.ENDIF
+.endif
 	decq len8
 	leaq 8(array),array
 	jnz loop8

@@ -10,6 +10,7 @@
 # Written by T. Kleinjung
 # Modifications by J. Franke
 
+#include "underscore.h"
 
 dnl n=asm3_tdsieve(fb,fbs,&(buf[0]),mpqs3_nFBk_1+i-1);
 
@@ -40,10 +41,14 @@ function_head(asm3_tdsieve)
 	pushq %r14
 	pushq %r15
 
+dnl smjs	movzwq mpqs3_sievelen(%rip),sl
 	movzwq mpqs3_sievelen(%rip),sl
+
 	movq sl,pend
 	shrq $2,pend
+dnl smjs	movq mpqs3_sievearray(%rip),sieve_interval
 	movq mpqs3_sievearray(%rip),sieve_interval
+
 	movq sieve_interval,sieveend
 	addq sl,sieveend
 tds4loop:
@@ -160,14 +165,14 @@ tds4nostore0:
 
 tds4store:
 # process entries
-.IF 0
+.if 0
  pushq %rdi
  pushq %rdx
  movq $22,%rdi
  call zeitA
  popq %rdx
  popq %rdi
-.ENDIF
+.endif
 
 tds4storeloop:
 	movq $0xff,%rax
@@ -183,20 +188,20 @@ tds4nostore:
 	jnz tds4storeloop
 
 	leaq (prime,prime),prime2
-.IF 0
+.if 0
  pushq %rdi
  pushq %rdx
  movq $22,%rdi
  call zeitB
  popq %rdx
  popq %rdi
-.ENDIF
+.endif
 	jmp tds4store_return
 
 tds4loopend:
 
 
-.IF 0
+.if 0
 	movzbl 3(%esp,sv),%eax
 	decl sv
 	leal (p,%eax,4),svlen
@@ -656,7 +661,7 @@ tds0loopend:
 	popl %esi
 	popl %edi
 	ret
-.ENDIF
+.endif
 	xorq %rax,%rax
 	emms
 	popq %r15
@@ -704,6 +709,7 @@ undefine(`sl')dnl
 undefine(`acc')dnl
 
 define(relptr,%rdi)dnl
+define(relptrw,%rdi)dnl
 define(minus,%rsi)dnl
 define(qx_arg,%rdx)dnl
 define(qx0,%r8)dnl
@@ -727,8 +733,9 @@ define(prod1,%rbp)dnl
 define(NMAXDIV,$``''25)dnl
 
 	.align 16
+dnl smjs.globl asm3_td
 .globl asm3_td
-	.type    asm3_td,@function
+dnl smjs	.type    asm3_td,@function
 dnl mm0: p,p
 dnl mm1: inv,inv
 dnl mm2: s1,s2
@@ -736,6 +743,7 @@ dnl mm3: ind,ind
 dnl mm4: computing
 dnl mm5: 0
 
+dnl smjs asm3_td:
 asm3_td:
 	pushq %rbx
 	pushq %rbp
@@ -767,11 +775,17 @@ dnl	movq $20,%rdi
 dnl	call zeitA
 dnl	movq aux5,%rdi
 
+dnl smjs	movzwq mpqs3_td_begin(%rip),%rcx
 	movzwq mpqs3_td_begin(%rip),%rcx
-	movq $mpqs3_FB_inv_info,aux3
-	movq $mpqs3_FB_start,aux2
 
+dnl smjs	movq $mpqs3_FB_inv_info,aux3
+dnl smjs	movq $mpqs3_FB_start,aux2
+	leaq mpqs3_FB_inv_info(%rip),aux3
+	leaq mpqs3_FB_start(%rip),aux2
+
+dnl smjs	movw mpqs3_nFBk_1(%rip),aux5w
 	movw mpqs3_nFBk_1(%rip),aux5w
+
 	addw $4,aux5w
 dnl first consider primes nr 1, 2 and 3
 	movaps (aux3),%xmm0
@@ -802,15 +816,15 @@ dnl found divisor
 	orl %eax,aux4d
 
 	shrl $5,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w          # aux5w=mpqs3_nFBk_1+2
 	shrl $4,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w          # aux5w=mpqs3_nFBk_1+3
 	shrl $4,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w          # aux5w=mpqs3_nFBk_1+4
 
@@ -840,19 +854,19 @@ dnl found divisor
 	orl %eax,aux4d  # significant bits at position 0,4,8,12
 
 	shrl $1,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w
 	shrl $4,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w
 	shrl $4,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w
 	shrl $4,aux4d
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	adcq $0,nr
 	incw aux5w
 
@@ -861,8 +875,12 @@ dnl found divisor
 dnl Calculate product of primes found by sieving in (prod0,prod1)
 dnl Calculate as long as possible in %rax
 prod:
-	movq $mpqs3_FB,aux1
+dnl smjs	movq $mpqs3_FB,aux1
+	leaq mpqs3_FB(%rip),aux1
+
+dnl smjs	movzwq mpqs3_nFBk_1(%rip),%rdx
 	movzwq mpqs3_nFBk_1(%rip),%rdx
+
 	addq %rdx,%rdx
 	addq %rdx,%rdx
 	subq %rdx,aux1
@@ -909,7 +927,7 @@ dnl	movq aux5,%rdi
 dnl nr1 and minus are the same register
 	movq nr,nr1
 	jz posloop
-	movw $0,14(relptr,nr,2)
+	movw $0,14(relptrw,nr,2)
 	incq nr
 
 posloop:
@@ -918,8 +936,10 @@ posloop:
 	incq nr
 	cmpq NMAXDIV,nr
 	jnc gotonext
+dnl smjs	movw mpqs3_nFBk_1(%rip),%cx
 	movw mpqs3_nFBk_1(%rip),%cx
-	movw %cx,12(relptr,nr,2)
+
+	movw %cx,12(relptrw,nr,2)
 	shrq $1,qx1
 	rcrq $1,qx0
 	jmp posloop
@@ -940,10 +960,16 @@ division:
 
 	movq prod0,%rdx
 	andq $0xff,%rdx
-	movq prod0,aux3
 	shrq $1,%rdx
+
+dnl smjs	movzbl mpqs3_256_inv_table(%rdx),aux2d
+dnl smjs THINK ?? I can use aux3 here temporarily and put back after from eax
+	leaq mpqs3_256_inv_table(%rip),aux3
+	movzbl (aux3, %rdx),aux2d
+
+	movq prod0,aux3
 	movl aux3d,%eax
-	movzbl mpqs3_256_inv_table(%rdx),aux2d
+
 	mull aux2d
 	andl $0xff00,%eax
 	mull aux2d
@@ -958,8 +984,11 @@ division:
 	movl %eax,qxd
 
 dnl trial divison of sieved primes
-	movq $mpqs3_FB_inv,aux2
-	movzwq mpqs3_nFBk_1,%rcx
+dnl smjs	movq $mpqs3_FB_inv,aux2
+	leaq mpqs3_FB_inv(%rip),aux2
+
+dnl smjs	movzwq mpqs3_nFBk_1,%rcx
+	movzwq mpqs3_nFBk_1(%rip),%rcx
 	addq %rcx,%rcx
 	addq %rcx,%rcx
 	subq %rcx,aux2
@@ -979,10 +1008,10 @@ divloop:
 	mull %ecx
 	testl %edx,%edx
 	jnz tdloop
-	cmpw NMAXDIV,nr
+	cmpw NMAXDIV,nrw
 	jnc gotonext
 	movl aux4d,%eax
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	incq nr
 	movl aux4d,qxd
 	jmp divloop
@@ -993,8 +1022,12 @@ dnl trial division of mpqs3_FBk-primes
 	cmpl $1,qxd
 	jz end
 
-	movq $mpqs3_FBk_inv,aux2
-	movq $mpqs3_FBk,aux1
+dnl smjs	movq $mpqs3_FBk_inv,aux2
+dnl smjs	movq $mpqs3_FBk,aux1
+	leaq mpqs3_FBk_inv(%rip),aux2
+	leaq mpqs3_FBk(%rip),aux1
+
+dnl smjs	movzwq mpqs3_nFBk(%rip),nr1
 	movzwq mpqs3_nFBk(%rip),nr1
 	incq nr1
 tdloopk:
@@ -1010,10 +1043,10 @@ divloopk:
 	mull %ecx
 	testl %edx,%edx
 	jnz tdloopk
-	cmpw NMAXDIV,nr
+	cmpw NMAXDIV,nrw
 	jnc gotonext
 	movl aux4d,%eax
-	movw nr1,14(relptr,nr,2)
+	movw nr1w,14(relptrw,nr,2)
 	incq nr
 	movl aux4d,qxd
 	jmp divloopk
@@ -1023,11 +1056,17 @@ dnl trial division of mpqs3_FB_Adiv-primes
 	cmpl $1,%eax
 	jz end
 
-	movq $mpqs3_FB_A_inv,aux2
-	movq $mpqs3_Adiv_all,aux1
+dnl smjs	movq $mpqs3_FB_A_inv,aux2
+dnl smjs	movq $mpqs3_Adiv_all,aux1
+dnl smjs 	movw mpqs3_nFB(%rip),aux5w
+dnl smjs	addw mpqs3_nFBk(%rip),aux5w
+dnl smjs	movzwq mpqs3_nAdiv_total,nr1
+	leaq mpqs3_FB_A_inv(%rip),aux2
+	leaq mpqs3_Adiv_all(%rip),aux1
         movw mpqs3_nFB(%rip),aux5w
         addw mpqs3_nFBk(%rip),aux5w
-	movzwq mpqs3_nAdiv_total,nr1
+	movzwq mpqs3_nAdiv_total(%rip),nr1
+
 	incq nr1
 tdloopa:
 	decq nr1
@@ -1043,10 +1082,10 @@ divloopa:
 	testl %edx,%edx
 	jnz tdloopa
 	movl aux4d,%eax
-	cmpw NMAXDIV,nr
+	cmpw NMAXDIV,nrw
 	jnc gotonext
 	addw nr1w,aux5w
-	movw aux5w,14(relptr,nr,2)
+	movw aux5w,14(relptrw,nr,2)
 	incq nr
 	subw nr1w,aux5w
 	movl aux4d,qxd

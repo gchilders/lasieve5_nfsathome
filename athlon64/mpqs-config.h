@@ -1,3 +1,6 @@
+
+#define uchar unsigned char
+
 #define USE_MEMCPY
 
 /* have pmullw, pmulhw for 8 16bit integers */
@@ -7,25 +10,47 @@
 
 #define TINY
 
+// SMJS Make all these ASM_ATTRs 
+
 /* on athlon64 ASM_MPQS_TD needs HAVE_XMM_MUL */
 #define ASM_MPQS_TD
 #define A64_STYLE_TD
-u32_t asm_td(u16_t*,u16_t,u64_t);
+u32_t ASM_ATTR asm_td(u16_t*,u16_t,u64_t);
 
 #define ASM_MPQS_SIEVE
-void asm_sieve(void);
+void ASM_ATTR asm_sieve(void);
 
 #define ASM_MPQS_EVAL
-size_t asm_evaluate(unsigned *,unsigned *,u16_t*,unsigned);
+size_t ASM_ATTR asm_evaluate(unsigned *,unsigned *,u16_t*,unsigned);
+size_t ASM_ATTR asm_evaluate_xmm(unsigned *,unsigned *,u16_t*,unsigned);
+
+size_t ASM_ATTR asm_evaluate0(unsigned *,unsigned *,u16_t*,unsigned);
+size_t ASM_ATTR asm_evaluate0_xmm(unsigned *,unsigned *,u16_t*,unsigned);
 
 #define ASM_MPQS_SIEVE_INIT
-void asm_sieve_init(unsigned char*,u32_t,ushort*,u64_t*,unsigned char*,u32_t);
+void ASM_ATTR asm_sieve_init(unsigned char*,u32_t,ushort*,u64_t*,unsigned char*,u32_t);
 #define ASM_MPQS_SIEVE_INIT16
-void asm_sieve_init16(unsigned char*,u32_t,ushort*,u64_t*,unsigned char*,u32_t);
+void ASM_ATTR asm_sieve_init16(unsigned char*,u32_t,ushort*,u64_t*,unsigned char*,u32_t);
 #define ASM_MPQS_NEXT_POL
+void ASM_ATTR asm_next_pol3minus_xmm(u32_t,ushort *);
+void ASM_ATTR asm_next_pol3minus(u32_t,ushort *);
+void ASM_ATTR asm_next_pol3plus_xmm(u32_t,ushort *);
+void ASM_ATTR asm_next_pol3plus(u32_t,ushort *);
+void ASM_ATTR asm_next_pol10_xmm(u32_t,ushort *,ushort *,u32_t);
+void ASM_ATTR asm_next_pol11_xmm(u32_t);
+
+
+void ASM_ATTR asm3_next_pol3minus_xmm(u32_t,ushort *);
+void ASM_ATTR asm3_next_pol3minus(u32_t,ushort *);
+void ASM_ATTR asm3_next_pol3plus_xmm(u32_t,ushort *);
+void ASM_ATTR asm3_next_pol3plus(u32_t,ushort *);
+void ASM_ATTR asm3_next_pol10_xmm(u32_t,ushort *,ushort *,u32_t);
+void ASM_ATTR asm3_next_pol11_xmm(u32_t);
+
+
 
 #define ASM_MPQS_GAUSS
-void asm_gauss(void);
+void ASM_ATTR asm_gauss(void);
 
 #ifdef TINY
 static ushort mpqs_param[14][7]={
@@ -73,23 +98,25 @@ static ushort mpqs_param[14][7]={
 
 #define ASM_MPQS3_NEXT_POL
 #define ASM_MPQS3_TD
-u32_t asm3_td(u16_t*,u16_t,u32_t*);
-/* to be competed
+u32_t ASM_ATTR asm3_td(u16_t*,u16_t,u32_t*);
+/* to be completed
 #define ASM_MPQS3_TDSIEVE
-u32_t asm3_tdsieve(u16_t*,u16_t*,u16_t**,u16_t);
+// SMJS Done in case
+u32_t ASM_ATTR asm3_tdsieve(u16_t*,u16_t*,u16_t**,u16_t);
 
 */
 
 #define ASM_MPQS3_SIEVE
-void asm3_sieve(void);
-void asm3_sievea(void);
+void ASM_ATTR asm3_sieve(void);
+void ASM_ATTR asm3_sievea(void);
 
 #define ASM_MPQS3_SIEVE_INIT
+void ASM_ATTR asm_sieve_init0(uchar *mpqs3_tinyarray,  u64_t *m64, u32_t mpqs3_tiny_prod);
 
 #define ASM_MPQS3_EVAL
 
 #define ASM_MPQS3_GAUSS
-void asm_re_strip(u64_t *,u32_t,i16_t *,unsigned char*);
+void ASM_ATTR asm_re_strip(u64_t *,u32_t,i16_t *,unsigned char*);
 
 
 #ifdef TINY3

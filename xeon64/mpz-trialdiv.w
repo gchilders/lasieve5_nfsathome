@@ -3,6 +3,7 @@ Replace one \.{divl} instruction by two \.{mull} and a few other
 instructions.
 
 @c
+#include <string.h>
 #include <stdlib.h>
 #include <gmp.h>
 

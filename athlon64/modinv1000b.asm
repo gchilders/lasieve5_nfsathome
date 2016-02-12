@@ -7,6 +7,8 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
+
 dnl The function we want to write.
 dnl ulong asm_modinv32b(x,y)
 dnl Modular inverse of x modulo y
@@ -87,4 +89,4 @@ BadArgs:
 Modinv_arg0:
 	xorl %eax,%eax
 	ret
-	.END
+dnl smjs	.END

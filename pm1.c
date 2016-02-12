@@ -18,7 +18,9 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include <time.h>
 #include <unistd.h>
 
+#ifndef _WIN64 // SMJS
 #include <sys/times.h>
+#endif
 #include <sys/time.h>
 
 #define uchar         unsigned char
@@ -137,6 +139,36 @@ static void clear_bit(uchar *rop, u32_t pos)
   }
 }
 
+static int get_bit64(u64_t *rop, u32_t pos)
+{
+  return (int)((rop[pos>>3])&(1<<(pos&7)));
+}
+
+
+static void set_bit64(u64_t *rop, u32_t pos)
+{
+  uchar x, y;
+
+  x=1<<(pos&7);
+  y=rop[pos>>3];
+  if (!(y&x)) {
+    y^=x;
+    rop[pos>>3]=y;
+  }
+}
+
+
+static void clear_bit64(u64_t *rop, u32_t pos)
+{
+  uchar x, y;
+
+  x=1<<(pos&7);
+  y=rop[pos>>3];
+  if ((y&x)) {
+    y^=x;
+    rop[pos>>3]=y;
+  }
+}
 static uchar pop8_tab[256]={
 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -239,7 +271,7 @@ static u32_t find_triples(uchar **rop, uchar **pr, u32_t dim1, u32_t dim2)
   bit_p=(u64_t **)xmalloc(dim1*sizeof(u64_t *));
   for (i=0; i<dim1; i++) {
     bit_p[i]=(u64_t *)xcalloc((size_t)d64,sizeof(u64_t));
-    for (j=0; j<dim2; j++) if (pr[i][j]) set_bit(bit_p[i],j);
+    for (j=0; j<dim2; j++) if (pr[i][j]) set_bit64(bit_p[i],j);
     cnt[i]=popcount(bit_p[i],d64);
   }
   r1=(u64_t *)xcalloc((size_t)d64,sizeof(u64_t));
@@ -281,13 +313,13 @@ static u32_t find_triples(uchar **rop, uchar **pr, u32_t dim1, u32_t dim2)
     res+=4;
     for (j=0; j<dim2; j++)
       if (pr[bi0][j]&pr[bi1][j]&pr[bi2][j]) {
-        if (!(get_bit(bit_p[bi0],j)&get_bit(bit_p[bi1],j)&get_bit(bit_p[bi2],j)))
+        if (!(get_bit64(bit_p[bi0],j)&get_bit64(bit_p[bi1],j)&get_bit64(bit_p[bi2],j)))
           complain("bits\n");
         pr[bi0][j]=0; pr[bi1][j]=0; pr[bi2][j]=0;
         cnt[bi0]--; cnt[bi1]--; cnt[bi2]--;
-        clear_bit(bit_p[bi0],j);
-        clear_bit(bit_p[bi1],j);
-        clear_bit(bit_p[bi2],j);
+        clear_bit64(bit_p[bi0],j);
+        clear_bit64(bit_p[bi1],j);
+        clear_bit64(bit_p[bi2],j);
         if (dim2>254) {
           tmp[ind++]=(uchar)(j>>8); tmp[ind++]=(uchar)(j&0xff);
         } else tmp[ind++]=(uchar)j;

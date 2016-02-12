@@ -57,7 +57,9 @@ void casm_copy192(ulong *x, ulong *y)
 
 /* ----------------- subtraction: ---------------------- */
 
-void casm_sub_n64(ulong *x, ulong *y)
+// SMJS For Windows need either all implemented in asm or non, so use sub_n64 in c rather than asm for 64
+//void casm_sub_n64(ulong *x, ulong *y)
+void asm_sub_n64(ulong *x, ulong *y)
 {
   if (x[0]>y[0]) {
     x[0]-=y[0];
@@ -421,8 +423,11 @@ asm_mulm64(&chk,a,b);
   asm_copy64(c,tmp);
   asm_add64_ui(c,0);
 if (*c!=chk) {
-  printf("mul failed: %lu %lu %lu\n",(ulong)a,(ulong)b,(ulong)c);
-  complain("%lu %lu %lu %lu\n%lu %lu\n",a1,b1,c[0],chk,montgomery_modulo_n[0],montgomery_inv_n);
+// SMJS
+//  printf("mul failed: %llu %llu %llu\n",(ulong)a,(ulong)b,(ulong)c);
+//  complain("%llu %llu %llu %llu\n%llu %llu\n",a1,b1,c[0],chk,montgomery_modulo_n[0],montgomery_inv_n);
+  printf("mul failed: "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n",(ulong)a,(ulong)b,(ulong)c);
+  complain(UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n"UL_FMTSTR" "UL_FMTSTR"\n",a1,b1,c[0],chk,montgomery_modulo_n[0],montgomery_inv_n);
 }
 }
 
@@ -462,8 +467,11 @@ asm_mulm128(chk,a,b);
   asm_copy128(c,tmp);
   asm_add128_ui(c,0);
 if ((c[0]!=chk[0]) || (c[1]!=chk[1])) {
-  printf("mul failed: %lu %lu %lu\n",(ulong)a,(ulong)b,(ulong)c);
-  complain("%lu %lu * %lu %lu\n%lu %lu != %lu %lu\n%lu %lu   %lu\n",a0,a1,b0,b1,c[0],c[1],chk[0],chk[1],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_inv_n);
+// SMJS
+//  printf("mul failed: %llu %llu %llu\n",(ulong)a,(ulong)b,(ulong)c);
+//  complain("%llu %llu * %llu %llu\n%llu %llu != %llu %llu\n%llu %llu   %llu\n",a0,a1,b0,b1,c[0],c[1],chk[0],chk[1],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_inv_n);
+  printf("mul failed: "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n",(ulong)a,(ulong)b,(ulong)c);
+  complain(UL_FMTSTR" "UL_FMTSTR" * "UL_FMTSTR" "UL_FMTSTR"\n"UL_FMTSTR" "UL_FMTSTR" != "UL_FMTSTR" "UL_FMTSTR"\n"UL_FMTSTR" "UL_FMTSTR"   "UL_FMTSTR"\n",a0,a1,b0,b1,c[0],c[1],chk[0],chk[1],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_inv_n);
 }
 }
 
@@ -505,8 +513,11 @@ asm_mulm192(chk,a,b);
   asm_copy192(c,tmp);
   asm_add192_ui(c,0);
 if ((c[0]!=chk[0]) || (c[1]!=chk[1]) || (c[2]!=chk[2])) {
-  printf("mul failed: %lu %lu %lu\n",(ulong)a,(ulong)b,(ulong)c);
-  complain("%lu %lu %lu * %lu %lu %lu\n%lu %lu %lu!= %lu %lu %lu\n%lu %lu %lu   %lu\n",a0,a1,a2,b0,b1,b2,c[0],c[1],c[2],chk[0],chk[1],chk[2],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_modulo_n[2],montgomery_inv_n);
+// SMJS
+//  printf("mul failed: %llu %llu %llu\n",(ulong)a,(ulong)b,(ulong)c);
+//  complain("%llu %llu %llu * %llu %llu %llu\n%llu %llu %llu!= %llu %llu %llu\n%llu %llu %llu   %llu\n",a0,a1,a2,b0,b1,b2,c[0],c[1],c[2],chk[0],chk[1],chk[2],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_modulo_n[2],montgomery_inv_n);
+  printf("mul failed: "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n",(ulong)a,(ulong)b,(ulong)c);
+  complain(UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR" * "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n"UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"!= "UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"\n"UL_FMTSTR" "UL_FMTSTR" "UL_FMTSTR"   "UL_FMTSTR"\n",a0,a1,a2,b0,b1,b2,c[0],c[1],c[2],chk[0],chk[1],chk[2],montgomery_modulo_n[0],montgomery_modulo_n[1],montgomery_modulo_n[2],montgomery_inv_n);
 } // else printf("ok");
 }
 

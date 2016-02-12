@@ -40,7 +40,8 @@ mmx_xmalloc(size_t n)
   r=(u16_t *)malloc(n*sizeof(u16_t));
   if(r==NULL)
     complain("mmx_malloc(%llu) failed: %m\n",(u64_t)n);
-  if (((int)r)&(MMX_REGW*sizeof(u16_t)-1))
+  //SMJSif (((int)r)&(MMX_REGW*sizeof(u16_t)-1))
+  if (((long)r)&(MMX_REGW*sizeof(u16_t)-1))
     complain("mmx_malloc: memalign failed\n");
 #if 0
   r=(u16_t*)memalign(MMX_REGW*sizeof(u16_t),n*sizeof(u16_t));

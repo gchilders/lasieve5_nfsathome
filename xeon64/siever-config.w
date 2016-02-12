@@ -10,7 +10,15 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
 
 @(siever-config.h@>=
-#define L1_BITS 16
+
+// SMJS Added these
+#include <sys/types.h>
+#include <gmp.h>
+#define NO_TD_CLOCK
+#define HAVE_CMOV
+#define ASM_ATTR
+
+#define L1_BITS 15
 #define ULONG_RI
 typedef unsigned u32_t;
 typedef int i32_t;
@@ -18,15 +26,15 @@ typedef short int i16_t;
 typedef unsigned short u16_t;
 typedef unsigned long u64_t;
 typedef long int i64_t;
+typedef unsigned long ulong;
 #define U32_MAX 0xffffffff
 #define I32_MAX INT_MAX
-#define ulong  unsigned long
 
 #define HAVE_ASM_GETBC
 void asm_getbc(u32_t,u32_t,u32_t,u32_t*,u32_t*,u32_t*,u32_t*);
 #define ASM_SCHEDSIEVE
 #define ASM_SCHEDTDSIEVE2
-u16_t**tdsieve_sched2buf(u16_t*,u16_t*,unsigned char*,u16_t **,u16_t**);
+u16_t**tdsieve_sched2buf(u16_t**,u16_t*,unsigned char*,u16_t **,u16_t**);
 
 #define ASM_MPZ_TD
 #define PREINVERT
@@ -52,7 +60,7 @@ u32_t* MMX_Td(u32_t*,int,u16_t);
 #define  MAX_FB_PER_P 2
 
 /* if coordinates of reduced vectors do not fit into 31 bit: */
-#if 0
+#if 1
 #define VERY_LARGE_Q
 #endif
 
@@ -64,6 +72,17 @@ u32_t *asm_lasieve_mm_setup20(u32_t*,u32_t*,size_t,u32_t,u32_t,u32_t,u32_t,u32_t
 u32_t *asm_lasieve_mm_setup21(u32_t*,u32_t*,size_t,u32_t,u32_t,u32_t,u32_t,u32_t*);
 u32_t *asm_lasieve_mm_setup22(u32_t*,u32_t*,size_t,u32_t,u32_t,u32_t,u32_t,u32_t*);
 u32_t *asm_lasieve_mm_setup23(u32_t*,u32_t*,size_t,u32_t,u32_t,u32_t,u32_t,u32_t*);
+
+// SMJS Added prototypes for 64 bit ones
+u32_t*asm_lasieve_mm_setup0_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup1_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup2_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup3_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup20_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup21_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup22_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+u32_t*asm_lasieve_mm_setup23_64(u32_t*,u32_t*,size_t,u64_t,u64_t,u64_t,u64_t,u32_t*);
+
 
 @ Read-ahead safety for factor base, recurrence info.
 @(siever-config.h@>=

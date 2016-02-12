@@ -8,9 +8,17 @@ with this program; see the file COPYING.  If not, write to the Free
 Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA.
 @(medsched.h@>=
+/* SMJS Old style prototypes replaced
 u32_t *medsched(u32_t*,u32_t*,u32_t*,u32_t**,u32_t,u32_t);
 u32_t *medsched_1(u32_t*,u32_t*,u32_t*,u32_t,unsigned char *,
                   unsigned char);
+*/
+u32_t *
+medsched(u32_t *ri, u32_t *ij_ptr, u32_t *ij_ptr_ub,
+         u32_t **sched_ptr,u32_t fbi_offs, u32_t ot);
+u32_t *
+medsched_1(u32_t *ri, u32_t *ij_ptr, u32_t *ij_ptr_ub, u32_t ot,
+           unsigned char *si, unsigned char lo);
 
 @
 @c
@@ -27,13 +35,18 @@ u32_t *medsched_1(u32_t*,u32_t*,u32_t*,u32_t,unsigned char *,
 
 #define U16_SHIFT (CHAR_BIT*sizeof(u16_t))
 
-u32_t *medsched0(u32_t*,u32_t*,u32_t*,u32_t**,u32_t);
-u32_t *medsched0_1(u32_t*,u32_t*,u32_t*,unsigned char*,unsigned char);
+u32_t * ASM_ATTR medsched0(u32_t*,u32_t*,u32_t*,u32_t**,u32_t);
+u32_t * ASM_ATTR medsched0_1(u32_t*,u32_t*,u32_t*,unsigned char*,unsigned char);
 
+/* Old style definition replaced to stop warning
 u32_t *
 medsched_1(ri,ij_ptr,ij_ptr_ub,ot,si,lo)
      u32_t *ri,*ij_ptr,*ij_ptr_ub,ot;
-     unsigned char *si,lo;
+     unsigned char *si, lo;
+*/
+u32_t *
+medsched_1(u32_t *ri, u32_t *ij_ptr, u32_t *ij_ptr_ub, u32_t ot,
+           unsigned char *si, unsigned char lo)
 {
   u32_t ij;
   u32_t ot_mask,ot_tester;
@@ -66,9 +79,14 @@ medsched_1(ri,ij_ptr,ij_ptr_ub,ot,si,lo)
 }
 
 
+/* SMJS Replaced old style definition 
 u32_t *
 medsched(ri,ij_ptr,ij_ptr_ub,sched_ptr,fbi_offs,ot)
      u32_t *ri,*ij_ptr,*ij_ptr_ub,**sched_ptr,fbi_offs,ot;
+*/
+u32_t *
+medsched(u32_t *ri, u32_t *ij_ptr, u32_t *ij_ptr_ub,
+         u32_t **sched_ptr,u32_t fbi_offs, u32_t ot)
 {
   u32_t ij;
   u32_t ot_mask,ot_tester;

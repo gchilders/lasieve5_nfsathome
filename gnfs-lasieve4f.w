@@ -34,6 +34,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 @
 @c
+// SMJS
+#include <assert.h>
+#include <fnmatch.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef SI_MALLOC_DEBUG
@@ -341,7 +345,7 @@ static clock_t last_clock;
 extern u64_t MMX_TdNloop;
 #endif
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   u16_t zip_output,force_aFBcalc;
   u16_t catch_signals;
@@ -639,13 +643,16 @@ void spq_init(mpz_t spq, mpz_t last)
   printf("\n");
 
   printf("%u spq-divisors: ",n_spq_p);
-  for (i=0; i<n_spq_p; i++) printf("%llu ",spq_p[i]);
+  // SMJS for (i=0; i<n_spq_p; i++) printf("%llu ",spq_p[i]);
+  for (i=0; i<n_spq_p; i++) printf(UL_FMTSTR" ",spq_p[i]);
   printf("\n");
 #if 0
   printf("spq-divisors, roots:\n");
   for (i=0; i<n_spq_p; i++) {
-    printf("%llu:",spq_p[i]);
-    for (j=1; j<=spq_p_roots[i][0]; j++) printf(" %llu",spq_p_roots[i][j]);
+    // SMJS printf("%llu:",spq_p[i]);
+    printf(UL_FMTSTR":",spq_p[i]);
+    // SMJS for (j=1; j<=spq_p_roots[i][0]; j++) printf(" %llu",spq_p_roots[i][j]);
+    for (j=1; j<=spq_p_roots[i][0]; j++) printf(" "UL_FMTSTR,spq_p_roots[i][j]);
     printf("\n");
   }
   printf("\n");
@@ -977,11 +984,13 @@ for (ind=0; ind<n_curspq_p; ind++) {
     case 'Q':
 {
       u64_t pmin, pmax;
-      if(sscanf(optarg,"%llu:%llu",&pmin,&pmax)==2) {
+// SMJS      if(sscanf(optarg,"%llu:%llu",&pmin,&pmax)==2) {
+      if(sscanf(optarg,UL_FMTSTR":"UL_FMTSTR,&pmin,&pmax)==2) {
         spq_pmin=pmin;
         spq_pmax=pmax;
       } else {
-        if(sscanf(optarg,"%llu",&spq_pmin)!=1) Usage();
+//        if(sscanf(optarg,"%llu",&spq_pmin)!=1) Usage();
+        if(sscanf(optarg,UL_FMTSTR,&spq_pmin)!=1) Usage();
       }
 }
       break;
@@ -1075,7 +1084,8 @@ for (ind=0; ind<n_curspq_p; ind++) {
   if(mpz_sizeinbase(last_spq,2)>=550) {
     /* CAVE: Maybe this can be relaxed somewhat without invalidating
        our reduction code, but better err on the safe side. */
-    complain("Cannot handle special q >= %llu\n",SPQ_MAX);
+//    complain("Cannot handle special q >= %llu\n",SPQ_MAX);
+    complain("Cannot handle special q >= "UL_FMTSTR"\n",SPQ_MAX);
   }
   if(optind<argc && basename==NULL) {
     basename=argv[optind];
@@ -1098,7 +1108,7 @@ for (ind=0; ind<n_curspq_p; ind++) {
   mpz_ull_init();
   mpz_init(rational_rest);
   mpz_init(algebraic_rest);
-  input_poly(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
+  input_poly_orig(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
 #if 0
   if(poldeg[1]>1) {
     if(poldeg[0]==1) {
@@ -1114,6 +1124,7 @@ for (ind=0; ind<n_curspq_p; ind++) {
   }
 #endif
   skip_blanks_comments(&input_line,&input_line_alloc,input_data);
+  printf("Input line = %s\n", input_line);
   if(input_line == NULL ||
      sscanf(input_line,"%hu %f %f %hu %hu\n",&(sieve_min[1]),
             FB_bound+1,&(sieve_report_multiplier[1]),
@@ -1123,6 +1134,7 @@ for (ind=0; ind<n_curspq_p; ind++) {
     errprintf("eg. 20     1e6    3.2                  30             50\n");
     complain("lacking from input file %s\n",basename);
   }
+  printf("Input line = %s\n", input_line);
   if(fscanf(input_data,"%hu %f %f %hu %hu\n",&(sieve_min[0]),
             FB_bound,&(sieve_report_multiplier[0]),
             &(max_primebits[0]),&(max_factorbits[0])) != 5) {
@@ -1729,7 +1741,17 @@ starting from |first_event[side][oddness_type-1]+2*fbi|.
 The recurrence information for the primes above |L1_SIZE| is stored starting
 from |LPri1[side]|.
 @<Global decl...@>=
-static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+// Change from revision 382 (started in r367) static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+// SMJS static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+#if I_bits<=L1_BITS
+static u32_t j_per_strip,jps_bits;
+#else
+#define j_per_strip 1
+#define jps_bits    0
+#endif
+static u32_t n_strips;
+//SMJS End replaced
+
 static struct schedule_struct {
   u16_t ***schedule;
   u32_t *fbi_bounds;
@@ -1783,9 +1805,19 @@ fss_sv2=xvalloc(L1_SIZE);
 tiny_sieve_buffer=xmalloc(TINY_SIEVEBUFFER_SIZE);
 if(n_i>L1_SIZE)
      complain("Strip length %u exceeds L1 size %u\n",n_i,L1_SIZE);
+
+// SMJS From r382 (started in r367)  added #if
+#if I_bits<=L1_BITS
+  j_per_strip= L1_SIZE/n_i;
+  jps_bits= L1_BITS-i_bits;
+#endif
+
+/* SMJS Replaced with above
 j_per_strip=L1_SIZE/n_i;
-jps_bits=L1_BITS-i_bits;
-jps_mask=j_per_strip-1;
+//jps_bits=L1_BITS-i_bits;
+*/
+// SMJS From r367 remove jps_mask=j_per_strip-1;
+
 if(j_per_strip != 1<<jps_bits)
      Schlendrian("Expected %u j per strip, calculated %u\n",
                  j_per_strip,1<<jps_bits);
@@ -1876,11 +1908,28 @@ and |1/sqrt(sigma)|.
 	   statistical independence of sieving events. */
 #ifndef SCHED_TOL
 #ifndef NO_SCHEDTOL
-#define SCHED_TOL 2
+// SMJS From r351
+// Was #define SCHED_TOL 2
+#define SCHED_PAD 48
+#if I_bits<15
+/* no change here, there were no sched.pathologies, and memory footprint is small */
+ #define SCHED_TOL 2
+#else
+/*
+these values are experimental; report
+SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430
+*/
+ #define SCHED_TOL 1.2
+#endif
 #endif
 #endif
 #ifdef SCHED_TOL
-	allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+// SMJS allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+        assert(rint(SCHED_PAD + SCHED_TOL * n_i * j_per_strip * log(log(fbp_ub) /
+                    log(fbp_lb))*SE_SIZE) <= ULONG_MAX);
+
+        allocate=(size_t)rint(SCHED_PAD + SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+
 #else
 	allocate=rint(sched_tol[i]*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
 #endif
@@ -2401,6 +2450,13 @@ void do_scheduling(struct schedule_struct *sched,u32_t ns,u32_t ot,u32_t s)
   if(sched->schedule[ll+1][k]>=sched->schedule[0][k]+sched->alloc) {
     if(k==0 && sched->schedule[ll+1][k]<sched->schedule[0][k]+sched->alloc1)
       continue;
+// SMJS Added from r351
+// SMJS Added this one so I can see sched pathologies
+/* report SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430 */
+// SMJS    fprintf(stderr,"\rSCHED_PATHOLOGY q0=%u k=%d excess=%d\n",
+    gmp_fprintf(stderr,"\rSCHED_PATHOLOGY q0=%Zd k=%d excess="UL_FMTSTR"\n",
+            special_q, k,
+            sched->schedule[ll+1][k]-(sched->schedule[0][k]+sched->alloc));
     longjmp(termination_jb,SCHED_PATHOLOGY);
   }
 }
@@ -3523,10 +3579,32 @@ infinity.
     p=x[0];
     l=x[1];
     d=x[2];
+
+// SMJS r384 patch (initial work in r367 patch and subsequently modified several times!)
+#if I_bits==L1_BITS
+                // j_per_strip = 2 here, and p is rarely 0 (which is a bug)
+                    if(d<2) horizontal_sievesums[d]+= l;
+                    if(p==0) x[0]=USHRT_MAX-1; // otherwise will crash in trial_divide()
+                    else if((d+=p)<2) horizontal_sievesums[d]+= l;
+#else
+#if I_bits<L1_BITS
+                    while(d<j_per_strip) {
+                      horizontal_sievesums[d]+= l;
+                      d+= p;
+                    }
+#else
+                // j_per_strip = 1 here, and p is rarely 0 (which is a bug)
+                    if(d==0)
+                      *horizontal_sievesums += l;
+#endif
+#endif
+
+/* SMJS Replaced
     while(d<j_per_strip) {
       horizontal_sievesums[d]+=l;
       d+=p;
     }
+*/
 #if 0
     x[2]=d-j_per_strip;
 #endif
@@ -4099,8 +4177,13 @@ array |tds_fbi[sieve_interval[i]]|.
   u16_t *x,j_step;
   j_step=j_per_strip-last_j;
   for(x=smallpsieve_aux[side];x<smallpsieve_aux_ub[side];x+=3) {
+// SMJS r367 patch
+/* Was
     modulo32=x[0];
     x[2]=modsub32(x[2],(j_step)%modulo32);
+*/
+    if ((modulo32=x[0]))
+      x[2]=modsub32(x[2],(j_step)%modulo32);
   }
 }  
 #endif
@@ -4976,7 +5059,8 @@ primality_tests()
     s1=s^first_psp_side;
     if(!need_test[s1]) continue;
     n_psp++;
-    if(psp(large_factors[s1],1)==1) return 0;
+// SMJS psp only has one arg if(psp(large_factors[s1],1)==1) return 0;
+    if(psp(large_factors[s1])==1) return 0;
     mpz_neg(large_factors[s1],large_factors[s1]);
   }
   return 1;
@@ -5096,6 +5180,22 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
     else
       nf=mpqs_factor(large_factors[s1],max_primebits[s1],&mf);
     if(nf<0) {
+// SMJS Added from  r370 (may need work because above code changed a bit)
+      /* did it fail on a square? */
+      mpz_sqrtrem(large_primes[s1][0],large_primes[s1][1],large_factors[s1]);
+      if(mpz_sgn(large_primes[s1][1]) == 0) { /* remainder == 0? */
+        mpz_set(large_primes[s1][1],large_primes[s1][0]);
+        nlp[s1]= 2;
+#if 0 /* this is now tested well enough, no need for a message */
+        if(verbose > 1) {
+          fprintf(stderr," mpqs on a prime square ");
+          mpz_out_str(stderr,10,large_primes[s1][0]);
+          fprintf(stderr,"^2  ");
+        }
+#endif
+        continue;
+      }
+
       fprintf(stderr,"mpqs failed for ");
       mpz_out_str(stderr,10,large_factors[s1]);
       fprintf(stderr,"(a,b): ");
@@ -5165,7 +5265,8 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
         fprintf(ofile," %llX",curspq_p[i]);
 #else
 /* CAVE: not tested */
-        if (curspq_p[i]>CWI_LPB) fprintf(ofile," %llu",curspq_p[i]);
+        // SMJS if (curspq_p[i]>CWI_LPB) fprintf(ofile," %llu",curspq_p[i]);
+        if (curspq_p[i]>CWI_LPB) fprintf(ofile," "UL_FMTSTR,curspq_p[i]);
 #endif
     }
     for(i=0;i<nlp[s];i++) {
@@ -5195,7 +5296,8 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
 /* CAVE: not tested */
     if (1-s==special_q_side) {
       for (i=n_curspq_p32; i<n_curspq_p; i++)
-        if (curspq_p[i]>CWI_LPB) fprintf(ofile," %llu",curspq_p[i]);
+// SMJS        if (curspq_p[i]>CWI_LPB) fprintf(ofile," %llu",curspq_p[i]);
+        if (curspq_p[i]>CWI_LPB) fprintf(ofile," "UL_FMTSTR,curspq_p[i]);
     }
   }
 #endif

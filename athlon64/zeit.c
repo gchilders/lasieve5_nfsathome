@@ -26,7 +26,7 @@ u64_t *asmzeitcounter;
 double *zeitsum;
 size_t zeitcounteranz;
 
-u64_t asmgetclock(void);
+u64_t ASM_ATTR asmgetclock(void);
 
 void zeita(size_t i)
 {
@@ -90,7 +90,7 @@ void printzeit(size_t i)
     fprintf(stderr,"Attempt to print time %zd of %zd\n",i,zeitcounteranz);
     abort();
   }
-  printf("%zu: %.3fs (%llu) ",i,zeitsum[i]/CLOCKS_PER_SEC,asmzeitcounter[i]);
+  printf("%zu: %.3fs (%lu) ",i,zeitsum[i]/CLOCKS_PER_SEC,asmzeitcounter[i]);
 }
 
 #endif

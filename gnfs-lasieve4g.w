@@ -34,6 +34,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 @
 @c
+// SMJS
+#include <assert.h>
+#include <fnmatch.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef SI_MALLOC_DEBUG
@@ -299,7 +303,7 @@ static clock_t last_clock;
 extern u64_t MMX_TdNloop;
 #endif
 
-main(int argc,char **argv)
+int main(int argc,char **argv)
 {
   u16_t zip_output,force_aFBcalc;
   u16_t catch_signals;
@@ -405,7 +409,8 @@ main(int argc,char **argv)
 	  @<Save this special q and finish@>@;
 	else {/* |termination_condition==SCHED_PATHOLOGY| */
 	  char *cmd;
-	  asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",basename,
+// SMJS	  asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",basename,
+	  asprintf(&cmd,"touch badsched.%s.%u."UL_FMTSTR"."UL_FMTSTR,basename,
 		   special_q_side,special_q,r[root_no]);
 	  system(cmd);
 	  free(cmd);
@@ -426,11 +431,13 @@ main(int argc,char **argv)
       }
       n_spq++;
       @<Calculate |spq_i| and |spq_j|@>@;
-      fprintf(ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
+      // SMJSfprintf(ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
+      fprintf(ofile,"# Start "UL_FMTSTR" "UL_FMTSTR" (%d,%d) (%d,%d)\n",
 	      special_q,r[root_no],a0,b0,a1,b1);
       @<Do the sieving and td@>@;
       @<Do batch td@>@;
-      fprintf(ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
+      //SMJSfprintf(ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
+      fprintf(ofile,"# Done "UL_FMTSTR" "UL_FMTSTR" (%d,%d) (%d,%d)\n",
 	      special_q,r[root_no],a0,b0,a1,b1);
       if (n_spq>=spq_count) break;
     }
@@ -490,7 +497,8 @@ static u64_t nextq64(u64_t lb)
   free(hn);
 
   if((of=fopen(ofn,"w"))!=0) {
-    fprintf(of,"%llu\n",special_q);
+    // SMJS fprintf(of,"%llu\n",special_q);
+    fprintf(of,UL_FMTSTR"\n",special_q);
     fclose(of);
   }
   free(ofn);
@@ -634,7 +642,8 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 
   spq_count=U32_MAX;
 
-#define NumRead64(x) if(sscanf(optarg,"%llu",&x)!=1) Usage()
+// SMJS #define NumRead64(x) if(sscanf(optarg,"%llu",&x)!=1) Usage()
+#define NumRead64(x) if(sscanf(optarg,UL_FMTSTR,&x)!=1) Usage()
 #define NumRead(x) if(sscanf(optarg,"%u",&x)!=1) Usage()
 #define NumRead16(x) if(sscanf(optarg,"%hu",&x)!=1) Usage()
 
@@ -692,9 +701,11 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       NumRead64(sieve_count);
       break;
     case 'f':
-      if(sscanf(optarg,"%llu:%llu:%llu",&first_spq,&first_spq1,
+      //if(sscanf(optarg,"%llu:%llu:%llu",&first_spq,&first_spq1,
+      if(sscanf(optarg,UL_FMTSTR":"UL_FMTSTR":"UL_FMTSTR,&first_spq,&first_spq1,
                 &first_root)!=3) {
-	if(sscanf(optarg,"%llu",&first_spq)==1) {
+	//if(sscanf(optarg,"%llu",&first_spq)==1) {
+	if(sscanf(optarg,UL_FMTSTR,&first_spq)==1) {
 	  first_spq1=first_spq;
 	  first_root=0;
 	} else Usage();
@@ -764,7 +775,7 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
   mpz_ull_init();
   mpz_init(btd_prod[0]);
   mpz_init(btd_prod[1]);
-  input_poly(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
+  input_poly_orig(N,poly,poldeg,poly+1,poldeg+1,m,input_data);
   skip_blanks_comments(&input_line,&input_line_alloc,input_data);
   if(input_line == NULL ||
      sscanf(input_line,"%hu %f %f %hu %hu\n",&(sieve_min[1]),
@@ -796,7 +807,8 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       Usage();
     }
     if((u64_t)(FB_bound[special_q_side])>first_spq) {
-      complain("Special q lower bound %llu below rFB bound %g\n",
+//      complain("Special q lower bound %llu below rFB bound %g\n",
+      complain("Special q lower bound "UL_FMTSTR" below rFB bound %g\n",
 	       first_spq,FB_bound[special_q_side]);
     }
   }
@@ -846,13 +858,21 @@ if(sieve_count != 0) {
   /* Output file was given as a command line option. */
   if(ofile_name==NULL) {
     if(zip_output==0) {
+/* SMJS
       asprintf(&ofile_name,"%s.lasieve-%u.%llu-%llu",basename,
+               special_q_side,first_spq,last_spq);
+*/
+      asprintf(&ofile_name,"%s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR,basename,
                special_q_side,first_spq,last_spq);
     } else {
       asprintf(&ofile_name,
 	       append_output==0 ?
+/* SMJS
 	       "gzip --best --stdout > %s.lasieve-%u.%llu-%llu.gz" :
 	       "gzip --best --stdout >> %s.lasieve-%u.%llu-%llu.gz",
+*/
+	       "gzip --best --stdout > %s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR".gz" :
+	       "gzip --best --stdout >> %s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR".gz",
                basename,special_q_side,first_spq,last_spq);
     }
   } else {
@@ -1414,7 +1434,17 @@ starting from |first_event[side][oddness_type-1]+2*fbi|.
 The recurrence information for the primes above |L1_SIZE| is stored starting
 from |LPri1[side]|.
 @<Global decl...@>=
-static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+
+// Change from revision 382 (started in r367) static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+// SMJS static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+#if I_bits<=L1_BITS
+static u32_t j_per_strip,jps_bits;
+#else
+#define j_per_strip 1
+#define jps_bits    0
+#endif
+static u32_t n_strips;
+
 static struct schedule_struct {
   u16_t ***schedule;
   u32_t *fbi_bounds;
@@ -1469,9 +1499,19 @@ fss_sv2=xvalloc(L1_SIZE);
 tiny_sieve_buffer=xmalloc(TINY_SIEVEBUFFER_SIZE);
 if(n_i>L1_SIZE)
      complain("Strip length %u exceeds L1 size %u\n",n_i,L1_SIZE);
+
+// SMJS From r382 (started in r367)  added #if
+#if I_bits<=L1_BITS
+  j_per_strip= L1_SIZE/n_i;
+  jps_bits= L1_BITS-i_bits;
+#endif
+
+/* SMJS Replaced with above
 j_per_strip=L1_SIZE/n_i;
-jps_bits=L1_BITS-i_bits;
-jps_mask=j_per_strip-1;
+//jps_bits=L1_BITS-i_bits;
+*/
+// SMJS From r367 remove jps_mask=j_per_strip-1;
+
 if(j_per_strip != 1<<jps_bits)
      Schlendrian("Expected %u j per strip, calculated %u\n",
                  j_per_strip,1<<jps_bits);
@@ -1562,11 +1602,27 @@ and |1/sqrt(sigma)|.
 	   statistical independence of sieving events. */
 #ifndef SCHED_TOL
 #ifndef NO_SCHEDTOL
-#define SCHED_TOL 2
+// SMJS From r351
+// Was #define SCHED_TOL 2
+#define SCHED_PAD 48
+#if I_bits<15
+/* no change here, there were no sched.pathologies, and memory footprint is small */
+ #define SCHED_TOL 2
+#else
+/*
+these values are experimental; report
+SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430
+*/
+ #define SCHED_TOL 1.2
+#endif
 #endif
 #endif
 #ifdef SCHED_TOL
-	allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+// SMJS allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+        assert(rint(SCHED_PAD + SCHED_TOL * n_i * j_per_strip * log(log(fbp_ub) /
+                    log(fbp_lb))*SE_SIZE) <= ULONG_MAX);
+
+        allocate=(size_t)rint(SCHED_PAD + SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
 #else
 	allocate=rint(sched_tol[i]*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
 #endif
@@ -2052,6 +2108,13 @@ void do_scheduling(struct schedule_struct *sched,u32_t ns,u32_t ot,u32_t s)
   if(sched->schedule[ll+1][k]>=sched->schedule[0][k]+sched->alloc) {
     if(k==0 && sched->schedule[ll+1][k]<sched->schedule[0][k]+sched->alloc1)
       continue;
+// SMJS Added from r351
+// SMJS Added this one so I can see sched pathologies
+/* report SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430 */
+// SMJS    fprintf(stderr,"\rSCHED_PATHOLOGY q0=%u k=%d excess=%d\n",
+    fprintf(stderr,"\rSCHED_PATHOLOGY q0=%u k=%d excess="UL_FMTSTR"\n",
+            (unsigned int)special_q, k,
+            sched->schedule[ll+1][k]-(sched->schedule[0][k]+sched->alloc));
     longjmp(termination_jb,SCHED_PATHOLOGY);
   }
 }
@@ -3009,10 +3072,34 @@ infinity.
     p=x[0];
     l=x[1];
     d=x[2];
+
+// SMJS r384 patch (initial work in r367 patch and subsequently modified several times!)
+#if I_bits==L1_BITS
+                // j_per_strip = 2 here, and p is rarely 0 (which is a bug)
+                    if(d<2) horizontal_sievesums[d]+= l;
+                    if(p==0) x[0]=USHRT_MAX-1; // otherwise will crash in trial_divide()
+                    else if((d+=p)<2) horizontal_sievesums[d]+= l;
+#else
+#if I_bits<L1_BITS
+                    while(d<j_per_strip) {
+                      horizontal_sievesums[d]+= l;
+                      d+= p;
+                    }
+#else
+                // j_per_strip = 1 here, and p is rarely 0 (which is a bug)
+                    if(d==0)
+                      *horizontal_sievesums += l;
+#endif
+#endif
+
+/* SMJS Replaced
     while(d<j_per_strip) {
       horizontal_sievesums[d]+=l;
       d+=p;
     }
+*/
+// SMJS Note the line below was if'd out in e and f, 
+// so not certain the above patch will work in this case
 #if 1
     x[2]=d-j_per_strip;
 #endif
@@ -3418,7 +3505,8 @@ printf("BTD Init: %u %u\n",btd_nmax[0],btd_nmax[1]);
 
   if (total_ntds>=btd_nsurv+btd_nmax[first_td_side]) {
 /* first side */
-printf("status: %u %u\n",total_ntds,btd_nsurv);
+// SMJS printf("status: %u %u\n",total_ntds,btd_nsurv);
+    printf("status: "SIZET_FMTSTR" %u\n",total_ntds,btd_nsurv);
     side=first_td_side; n0=btd_nsurv; n1=btd_nsurv;
     while (n0+btd_nmax[side]<total_ntds) {
       td_init(btd_val[side]+n0,btd_nmax[side]);
@@ -3467,7 +3555,8 @@ printf("btd0: %u -> %u\n",btd_nmax[side],nc-n1);
       tds_ab[2*i+1]=tds_ab[2*n0+1];
     }
     total_ntds=i;
-printf("status: %u %u\n",total_ntds,btd_nsurv);
+// SMJS printf("status: %u %u\n",total_ntds,btd_nsurv);
+    printf("status: "SIZET_FMTSTR" %u\n",total_ntds,btd_nsurv);
   }
 }
 
@@ -3530,10 +3619,13 @@ printf("status: %u %u\n",total_ntds,btd_nsurv);
   if (s==2) {
     yield++;
     fprintf(ofile,"W ");
-    if (tds_ab[2*ii]<0) fprintf(ofile,"-%llx ",-tds_ab[2*ii]);
-    else fprintf(ofile,"%llx ",tds_ab[2*ii]);
+    // SMJS if (tds_ab[2*ii]<0) fprintf(ofile,"-%llx ",-tds_ab[2*ii]);
+    if (tds_ab[2*ii]<0) fprintf(ofile,"-"UL_xFMTSTR" ",-tds_ab[2*ii]);
+    // SMJS else fprintf(ofile,"%llx ",tds_ab[2*ii]);
+    else fprintf(ofile,UL_xFMTSTR" ",tds_ab[2*ii]);
     if (tds_ab[2*ii+1]<0) Schlendrian("b negative\n");
-    fprintf(ofile,"%llx\n",tds_ab[2*ii+1]);
+    // SMJS fprintf(ofile,"%llx\n",tds_ab[2*ii+1]);
+    fprintf(ofile,UL_xFMTSTR"\n",tds_ab[2*ii+1]);
   }
 }
 
@@ -3607,10 +3699,13 @@ for (i=0; i<btd_nsurv; i++) mpz_abs(btd_val[first_td_side][i],btd_val[first_td_s
     if (s==2) {
       yield++;
       fprintf(ofile,"W ");
-      if (tds_ab[2*i]<0) fprintf(ofile,"-%llx ",-tds_ab[2*i]);
-      else fprintf(ofile,"%llx ",tds_ab[2*i]);
+      //SMJSif (tds_ab[2*i]<0) fprintf(ofile,"-%llx ",-tds_ab[2*i]);
+      if (tds_ab[2*i]<0) fprintf(ofile,"-"UL_xFMTSTR" ",-tds_ab[2*i]);
+      //SMJS else fprintf(ofile,"%llx ",tds_ab[2*i]);
+      else fprintf(ofile,UL_xFMTSTR" ",tds_ab[2*i]);
       if (tds_ab[2*i+1]<0) Schlendrian("b negative\n");
-      fprintf(ofile,"%llx\n",tds_ab[2*i+1]);
+      // SMJSfprintf(ofile,"%llx\n",tds_ab[2*i+1]);
+      fprintf(ofile,UL_xFMTSTR"\n",tds_ab[2*i+1]);
     }
   }
 }
@@ -3979,7 +4074,8 @@ primality_tests()
     s1=s^first_psp_side;
     if(!need_test[s1]) continue;
     n_psp++;
-    if(psp(large_factors[s1],1)==1) return 0;
+    // SMJS psp only has one arg if(psp(large_factors[s1],1)==1) return 0;
+    if(psp(large_factors[s1])==1) return 0;
     mpz_neg(large_factors[s1],large_factors[s1]);
   }
   return 1;
@@ -4099,6 +4195,22 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
     else
       nf=mpqs_factor(large_factors[s1],max_primebits[s1],&mf);
     if(nf<0) {
+// SMJS Added from  r370 (may need work because above code changed a bit)
+      /* did it fail on a square? */
+      mpz_sqrtrem(large_primes[s1][0],large_primes[s1][1],large_factors[s1]);
+      if(mpz_sgn(large_primes[s1][1]) == 0) { /* remainder == 0? */
+        mpz_set(large_primes[s1][1],large_primes[s1][0]);
+        nlp[s1]= 2;
+#if 0 /* this is now tested well enough, no need for a message */
+        if(verbose > 1) {
+          fprintf(stderr," mpqs on a prime square ");
+          mpz_out_str(stderr,10,large_primes[s1][0]);
+          fprintf(stderr,"^2  ");
+        }
+#endif
+        continue;
+      }
+
       fprintf(stderr,"mpqs failed for ");
       mpz_out_str(stderr,10,large_factors[s1]);
       fprintf(stderr,"(a,b): ");
@@ -4165,10 +4277,11 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
     if (s==special_q_side) {
       if (special_q>>32)
 #ifndef OFMT_CWI
-        fprintf(ofile," %llX",special_q);
+        //SMJS fprintf(ofile," %llX",special_q);
+        fprintf(ofile," "UL_XFMTSTR,special_q);
 #else
 /* CAVE: not tested */
-        if (special_q>CWI_LPB) fprintf(ofile," %llu",special_q);
+        if (special_q>CWI_LPB) fprintf(ofile," "UL_FMTSTR,special_q);
 #endif
     }
     for(i=0;i<nlp[s];i++) {
@@ -4197,7 +4310,7 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
     }
     if (1-s==special_q_side) {
       if (special_q>>32)
-        if (special_q>CWI_LPB) fprintf(ofile," %llu",special_q);
+        if (special_q>CWI_LPB) fprintf(ofile," "UL_FMTSTR,special_q);
     }
   }
 #endif

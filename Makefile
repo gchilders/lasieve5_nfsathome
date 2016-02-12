@@ -7,20 +7,45 @@
 # Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 
-ifdef DEBUG
-CFLAGS= -DGATHER_STAT -DDEBUG -g
-else
-CFLAGS= -O3 -DGATHER_STAT
-endif
+#ifdef DEBUG
 #CFLAGS= -DGATHER_STAT -DDEBUG -g
+#else
 
-GMP_LIB=-lgmp
-# GMP_LIB=/home/franke/itanium-bin/libgmp.a
+# SMJS various ones I've used
+
+# For gcc installed using brew on osx 10.9 (note -Wa,-q which specifies using clang as rather than system one)
+CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+#CFLAGS= -m64 -Ofast -march=corei7 -mtune=corei7 -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+
+# windows one
+#CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -funroll-loops -Ic:/users/steve/progs/local/include 
+
+# linux
+#CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -I/Users/searle/progs/ensc-dependencies/include
+
+#clang
+#CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
+#clang for profiling
+#CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
+
+#endif
+
+GMP_LIB=-L/Users/searle/progs/ensc-dependencies/lib -lgmp
+#For windows
+#GMP_LIB=-Lc:/Users/steve/progs/local/lib -lgmp -lws2_32
+#Using brew installed gmp
+#GMP_LIB=-L/usr/local/Cellar/gmp4/4.3.2/lib -lgmp
+#orig
+#GMP_LIB=/home/franke/itanium-bin/libgmp.a
 
 include paths
 
-CC=gcc -static $(CFLAGS)
-TANGLE=ctangle
+CC=gcc  $(CFLAGS)
+#CC=gcc-4.9  $(CFLAGS)
+#CC=clang  $(CFLAGS)
+
+CTANGLE=ctangle
+#CTANGLE='c:/progra~2/cweb/bin/ctangle.exe'
 
 .SUFFIXES:
 
@@ -29,6 +54,7 @@ TANGLE=ctangle
 SRCFILES=fbgen.c fbgen.h lasieve-prepn.w la-cs.w if.w gmp-aux.w mpz-ull.w \
 	fbgen64.c fbgen64.h \
 	real-poly-aux.c real-poly-aux.h recurrence6.w redu2.w input-poly.w \
+	input-poly-orig.w \
 	primgen32.w primgen64.w gnfs-lasieve4e.w gnfs-lasieve4g.w \
 	td.[ch] \
 	ecm.[ch] strategy.w ecmtest.c \
@@ -78,10 +104,15 @@ asm/%:	force
 
 .PHONY:	force
 
-clean:
-	rm *.o *.a asm/*.o asm/*.a
+alle: gnfs-lasieve4I11e  gnfs-lasieve4I12e  gnfs-lasieve4I13e  gnfs-lasieve4I14e   gnfs-lasieve4I15e  gnfs-lasieve4I16e
+
+allf: gnfs-lasieve4I11f  gnfs-lasieve4I12f  gnfs-lasieve4I13f  gnfs-lasieve4I14f   gnfs-lasieve4I15f  gnfs-lasieve4I16f
+
+allg: gnfs-lasieve4I11g  gnfs-lasieve4I12g  gnfs-lasieve4I13g  gnfs-lasieve4I14g   gnfs-lasieve4I15g  gnfs-lasieve4I16g
 
 input-poly.o: input-poly.h
+
+input-poly-orig.o: input-poly-orig.h
 
 fbgen.o: gmp-aux.h
 
@@ -129,23 +160,23 @@ mpqs3.o: mpqs3.c asm/mpqs-config.h asm/siever-config.h
 #	gcc -c -O2 -o $@ $<
 	$(CC) -c -o $@ $<
 
-gnfs-lasieve4I%e: gnfs-lasieve4eI%.o if.o input-poly.o redu2.o \
+gnfs-lasieve4I%e: gnfs-lasieve4eI%.o if.o input-poly.o libgmp-aux.a redu2.o \
 	recurrence6.o fbgen.o fbgen64.o real-poly-aux.o mpqs.o \
-	primgen32.o libgmp-aux.a lasieve-prepn.o pprime_p.o \
+	primgen32.o lasieve-prepn.o pprime_p.o \
 	strategy.o ecm.o mpqs3.o pm1.o \
 	asm/liblasieve.a asm/liblasieveI%.a
 	$(CC) -o $@ $^ $(GMP_LIB) -lm
 
-gnfs-lasieve4I%f: gnfs-lasieve4fI%.o if.o input-poly.o redu2.o \
+gnfs-lasieve4I%f: gnfs-lasieve4fI%.o if.o input-poly-orig.o libgmp-aux.a redu2.o \
 	recurrence6.o fbgen.o fbgen64.o real-poly-aux.o mpqs.o \
-	primgen32.o libgmp-aux.a lasieve-prepn.o pprime_p.o \
+	primgen32.o lasieve-prepn.o pprime_p.o \
 	strategy.o ecm.o mpqs3.o pm1.o \
 	asm/liblasieve.a asm/liblasieveI%.a
 	$(CC) -o $@ $^ $(GMP_LIB) -lm
 
-gnfs-lasieve4I%g: gnfs-lasieve4gI%.o if.o input-poly.o redu2.o \
+gnfs-lasieve4I%g: gnfs-lasieve4gI%.o if.o input-poly-orig.o libgmp-aux.a redu2.o \
 	recurrence6.o fbgen.o fbgen64.o real-poly-aux.o mpqs.o \
-	primgen32.o primgen64.o libgmp-aux.a lasieve-prepn.o pprime_p.o \
+	primgen32.o primgen64.o lasieve-prepn.o pprime_p.o \
 	strategy.o ecm.o mpqs3.o pm1.o td.o \
 	asm/liblasieve.a asm/liblasieveI%.a
 	$(CC) -o $@ $^ $(GMP_LIB) -lm
@@ -205,3 +236,14 @@ pm1stat: pm1stat.o pm1z.o if.o asm/liblasieve.a
 lasieve5.tgz: Makefile paths INSTALL.and.USE COPYING $(SRCFILES) $(ASMFILES)
 	tar cvO $^ | gzip --best --stdout > $@
 
+clean:
+	rm -f *.o *.a asm/*.o asm/*.a asm/*.s asm/*.S
+
+realclean: clean
+	rm -f gmp-aux.c gnfs-lasieve4e.c gnfs-lasieve4f.c gnfs-lasieve4g.c if.c input-poly.c la-cs.c lasieve-prepn.c mpz-ull.c primgen32.c primgen64.c recurrence6.c redu2.c strategy.c
+	rm -f gmp-aux.h gnfs-lasieve4e.h gnfs-lasieve4f.h gnfs-lasieve4g.h if.h input-poly.h la-cs.h lasieve-prepn.h mpz-ull.h primgen32.h primgen64.h recurrence6.h redu2.h strategy.h
+	rm -f asm/lasched.c asm/medsched.c asm/mpz-trialdiv.c asm/siever-config.c
+	rm -f asm/lasched.h asm/medsched.h asm/mpz-trialdiv.h asm/siever-config.h
+
+binclean: realclean
+	rm -f gnfs-lasieve4I1* forumexs/*.out readmeex/*.gz

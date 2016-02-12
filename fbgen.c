@@ -39,7 +39,7 @@ i32_t modulo32bit[32],modulo32ebits;
 
 u32_t * polr,t,polr_alloc=0;
 
-inline u32_t polmodsq32(u32_t * P,u32_t dP){
+static inline u32_t polmodsq32(u32_t * P,u32_t dP){
    u32_t i,j,a,m;
    m=P[dP];
    P[dP<<1]=modsq32(m);
@@ -99,7 +99,7 @@ u32_t polgcdmod32(u32_t * P,u32_t dP, u32_t * Q, u32_t dQ){
    return 0;
 }
 
-inline u32_t poldivnormmod32(u32_t *P,u32_t dP,u32_t *D, u32_t dD){ /* D 
+static inline u32_t poldivnormmod32(u32_t *P,u32_t dP,u32_t *D, u32_t dD){ /* D 
 normiert */
    u32_t i,a,j;
    while(dP>=dD){

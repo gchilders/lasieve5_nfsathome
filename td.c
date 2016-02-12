@@ -148,7 +148,8 @@ void td_pprod_store(mpz_t op, u64_t p0, u64_t p1)
   char *fname;
   FILE *fi;
 
-  asprintf(&fname,"pprod/pprod.%llu-%llu",p0,p1-1);
+  // SMJS asprintf(&fname,"pprod/pprod.%llu-%llu",p0,p1-1);
+  asprintf(&fname,"pprod/pprod."UL_FMTSTR"-"UL_FMTSTR,p0,p1-1);
   if (stat(fname,&statbuf)==0)
     complain("td_pprod_store: file already exists: %s\n",fname);
   fi=fopen(fname,"w");
@@ -165,7 +166,8 @@ int td_pprod_load(mpz_t rop, u64_t p0, u64_t p1)
   char *fname;
   FILE *fi;
 
-  asprintf(&fname,"pprod/pprod.%llu-%llu",p0,p1-1);
+  // SMJSasprintf(&fname,"pprod/pprod.%llu-%llu",p0,p1-1);
+  asprintf(&fname,"pprod/pprod."UL_FMTSTR"-"UL_FMTSTR,p0,p1-1);
   if (stat(fname,&statbuf)) { mpz_set_ui(rop,0); return -1; }
 //    complain("td_pprod_load: file does not exist: %s\n",fname);
   fi=fopen(fname,"r");

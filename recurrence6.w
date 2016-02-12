@@ -124,8 +124,11 @@ with $1\le a\le a_{n+1}$ as claimed.
 
 @ Our function takes the form
 @(recurrence6.h@>=
+#include "asm/siever-config.h"
 void rec_info_init(u32_t A,u32_t ub);
-u32_t get_recurrence_info(u32_t *res_ptr,u32_t p,u32_t r);
+u32_t ASM_ATTR get_recurrence_info(u32_t *res_ptr,u32_t p,u32_t r);
+// SMJS How to remove underscore issue - u32_t 
+//      get_recurrence_info(u32_t *res_ptr,u32_t p,u32_t r) asm ("get_recurrence_info");
 
 @ The first argument to |rec_info_init| has the same meaning as above, that
 is, it specifies the length of the interval $I'$ of admissible values for
@@ -191,7 +194,7 @@ void rec_info_init(u32_t A1,u32_t ub1)
 
 @
 @c
-u32_t
+u32_t ASM_ATTR
 get_recurrence_info(u32_t *res_ptr,u32_t p,u32_t r)
 {
   u32_t b,c,s,t;

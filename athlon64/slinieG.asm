@@ -6,7 +6,6 @@ dnl Now, the registers which we are going to use
 define(sieve_ptr,%rcx)dnl
 define(sieve_ptr_ub,%rax)dnl
 define(root,%r8)dnl
-define(rootw,%r8w)dnl
 define(prime,%r9)dnl
 define(sieve_log,%r10b)dnl
 define(sv0,%r11b)dnl
@@ -68,7 +67,7 @@ slinie_last_se`'i:
 slinie_next_j`'i:
 ')
 	cmpq aux_ptr,aux_ptr_ub
-	movw rootw,root_src
+#	movq root,root_src
 	leaq 8(aux_ptr),aux_ptr
 	ja slinie_fbi_loop
 slinie_ende:

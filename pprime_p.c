@@ -30,12 +30,20 @@ the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 /* Changes for prime power detection made by Jens Franke. */
 
+#include "asm/siever-config.h"
+
 #include <gmp.h>
 
 
 mpz_t mpz_compos_witness;
 static short witness_initialized=0;
 short have_compos_witness;
+
+// SMJS
+#ifndef _WIN64
+static int randInited = 0;
+static gmp_randstate_t randstate; 
+#endif
 
 static int
 possibly_prime (n, n_minus_1, x, y, q, k)
@@ -44,14 +52,29 @@ possibly_prime (n, n_minus_1, x, y, q, k)
      mpz_ptr x;
      mpz_ptr y;
      mpz_srcptr q;
-     unsigned long int k;
+     ulong k;
 {
-  unsigned long int i;
+  ulong i;
+
+  // SMJS
+#ifdef _WIN64
+  if (!randInited) {
+    gmp_randinit_default(randstate);
+    randInited = 1;
+  }
+#endif
+  // SMJS Ended added
 
   /* find random x s.t. 1 < x < n */
   do
     {
+      // SMJS mpz_random missing from MPIR mpz_random (x, mpz_size (n));
+      //  https://gmplib.org/manual/Integer-Random-Numbers.html#Integer-Random-Numbers
+#ifdef _WIN64
+      mpz_urandomm (x, randstate, n);
+#else
       mpz_random (x, mpz_size (n));
+#endif
       mpz_mmod (x, x, n);
     }
   while (mpz_cmp_ui (x, 1L) <= 0);
@@ -90,8 +113,9 @@ mpz_probab_prime_p1 (m, reps)
 #endif
 {
   mpz_t n, n_minus_1, x, y, q;
-  int i, is_prime;
-  unsigned long int k;
+  // SMJS Initialise is_prime to stop compiler complaint (I guess its for the case where reps = 0 which probably never happens)
+  int i, is_prime = 0;
+  ulong k;
 
   have_compos_witness=0;
   mpz_init (n);

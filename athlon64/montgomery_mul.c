@@ -22,31 +22,36 @@ static int montgomery_multiplication_is_init=0;
 
 
 /* function pointers */
-void (*asm_mulmod)(ulong *,ulong *,ulong *)=NULL;
-void (*asm_squmod)(ulong *,ulong *)=NULL;
-void (*asm_add2)(ulong *,ulong *)=NULL;
-void (*asm_diff)(ulong *,ulong *,ulong *)=NULL;
-void (*asm_sub)(ulong *,ulong *,ulong *)=NULL;
-void (*asm_add2_ui)(ulong *,ulong)=NULL;
-void (*asm_zero)(ulong *)=NULL;
-void (*asm_copy)(ulong *,ulong *)=NULL;
+void ASM_ATTR (*asm_mulmod)(ulong *,ulong *,ulong *)=NULL;
+void ASM_ATTR (*asm_zero)(ulong *)=NULL;
+void ASM_ATTR (*asm_copy)(ulong *,ulong *)=NULL;
+void ASM_ATTR (*asm_half)(ulong *)=NULL;
+void ASM_ATTR (*asm_sub)(ulong *,ulong *,ulong *)=NULL;
+void ASM_ATTR (*asm_add2)(ulong *,ulong *)=NULL;
+
 void (*asm_sub_n)(ulong *,ulong *)=NULL;
-void (*asm_half)(ulong *)=NULL;
+
+void (*asm_squmod)(ulong *,ulong *)=NULL;
+void (*asm_diff)(ulong *,ulong *,ulong *)=NULL;
+void (*asm_add2_ui)(ulong *,ulong)=NULL;
 int (*asm_inv)(ulong *,ulong *)=NULL;
 
 
 
-extern void asm_mulm64(ulong *,ulong *,ulong *);
-extern void asm_sqm64(ulong *,ulong *);
-extern void asm_add64(ulong *,ulong *);
-extern void asm_diff64(ulong *,ulong *,ulong *);
-extern void asm_sub64_3(ulong *,ulong *,ulong *);
-extern void asm_add64_ui(ulong *,ulong);
-extern void asm_zero64(ulong *);
-extern void asm_copy64(ulong *,ulong *);
+/* Moved to header file
+extern void ASM_ATTR asm_mulm64(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_zero64(ulong *);
+extern void ASM_ATTR asm_sub64_3(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_copy64(ulong *,ulong *);
+extern void ASM_ATTR asm_half64(ulong *);
+extern void ASM_ATTR asm_add64(ulong *,ulong *);
+
 extern void asm_sub_n64(ulong *,ulong *);
-extern void asm_half64(ulong *);
+extern void asm_add64_ui(ulong *,ulong);
+extern void asm_sqm64(ulong *,ulong *);
+extern void asm_diff64(ulong *,ulong *,ulong *);
 extern int asm_inv64(ulong *,ulong *);
+*/
 
 #ifdef ULONG_HAS_32BIT
 extern void asm_mulm96(ulong *,ulong *,ulong *);
@@ -62,17 +67,20 @@ extern void asm_half96(ulong *);
 extern int asm_inv96(ulong *,ulong *);
 #endif
 
-extern void asm_mulm128(ulong *,ulong *,ulong *);
-void asm_sqm128(ulong *,ulong *);
-extern void asm_add128(ulong *,ulong *);
-extern void asm_diff128(ulong *,ulong *,ulong *);
-extern void asm_sub128_3(ulong *,ulong *,ulong *);
-extern void asm_add128_ui(ulong *,ulong);
-extern void asm_zero128(ulong *);
-extern void asm_copy128(ulong *,ulong *);
+/* Moved to header file
+extern void ASM_ATTR asm_sub128_3(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_zero128(ulong *);
+extern void ASM_ATTR asm_copy128(ulong *,ulong *);
+extern void ASM_ATTR asm_half128(ulong *);
+extern void ASM_ATTR asm_mulm128(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_add128(ulong *,ulong *);
+
 extern void asm_sub_n128(ulong *,ulong *);
-extern void asm_half128(ulong *);
+void asm_sqm128(ulong *,ulong *);
+extern void asm_diff128(ulong *,ulong *,ulong *);
+extern void asm_add128_ui(ulong *,ulong);
 extern int asm_inv128(ulong *,ulong *);
+*/
 
 #ifdef ULONG_HAS_32BIT
 extern void asm_mulm160(ulong *,ulong *,ulong *);
@@ -88,17 +96,20 @@ extern void asm_half160(ulong *);
 extern int asm_inv160(ulong *,ulong *);
 #endif
 
-extern void asm_mulm192(ulong *,ulong *,ulong *);
-void asm_sqm192(ulong *,ulong *);
-extern void asm_add192(ulong *,ulong *);
-extern void asm_diff192(ulong *,ulong *,ulong *);
-extern void asm_sub192_3(ulong *,ulong *,ulong *);
-extern void asm_add192_ui(ulong *,ulong);
-extern void asm_zero192(ulong *);
-extern void asm_copy192(ulong *,ulong *);
+/* Moved to header file
+extern void ASM_ATTR asm_zero192(ulong *);
+extern void ASM_ATTR asm_mulm192(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_sub192_3(ulong *,ulong *,ulong *);
+extern void ASM_ATTR asm_add192(ulong *,ulong *);
+extern void ASM_ATTR asm_copy192(ulong *,ulong *);
+extern void ASM_ATTR asm_half192(ulong *);
+
 extern void asm_sub_n192(ulong *,ulong *);
-extern void asm_half192(ulong *);
+void asm_sqm192(ulong *,ulong *);
+extern void asm_diff192(ulong *,ulong *,ulong *);
+extern void asm_add192_ui(ulong *,ulong);
 extern int asm_inv192(ulong *,ulong *);
+*/
 
 
 extern int asm_invert(ulong *,ulong *);
@@ -132,31 +143,31 @@ void asm_sqm192(ulong *x,ulong *y)
 #ifndef HAVE_ASM_INV
 int asm_inv64(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #ifdef ULONG_HAS_32BIT
 int asm_inv96(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 #endif
 
 int asm_inv128(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #ifdef ULONG_HAS_32BIT
 int asm_inv160(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 #endif
 
 int asm_inv192(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #endif

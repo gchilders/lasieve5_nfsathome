@@ -12,6 +12,8 @@ dnl ulong asm_getbc(x)
 dnl Modular inverse of x modulo modulo32
 dnl and y satisfies 0<y<x.
 
+#include "underscore.h"
+
 define(x,%edi)dnl
 define(y,%esi)dnl
 define(Aarg,%edx)dnl
@@ -29,9 +31,18 @@ define(nts,15)dnl
 
 .text
 	.align 4
-.globl asm_getbc
+ifelse(windows,`1',
+`.globl asm_getbc
+        .def    asm_getbc; .scl    2;      .type   32;     .endef
+asm_getbc:'
+,osx,`1',
+`.globl _asm_getbc
+_asm_getbc:'
+,linux,`1',
+`.globl asm_getbc
 	.type	 asm_getbc,@function	
-asm_getbc:
+asm_getbc:'
+,)dnl
 	pushq %rbx
 	xorl xc,xc
 	movl Aarg,A

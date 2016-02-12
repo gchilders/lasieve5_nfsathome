@@ -11,6 +11,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 /* Written by T. Kleinjung, with some modifications by J. Franke. */
 
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -375,7 +376,8 @@ static u32_t mpqs_powmod_mm(u32_t a, u32_t e, u32_t p32, u32_t mmi, u32_t one)
 static ushort mpqs_sqrt_init(ushort p)
 {
   ushort e, u, i, j;
-  u32_t g, b;
+  // SMJS initialised g to stop compiler warning
+  u32_t g = 0, b;
 
   if (p&2) return 0;
   if (p&4) return mpqs_powmod(2,(p-1)>>2,p);
@@ -851,8 +853,10 @@ printf("\n");*/
 
 /* for next_pol: */
 {
-//#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
-//   h32+=hh32*p; h32=h32>>16
+/*
+#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
+   h32+=hh32*p; h32=h32>>16
+*/
 
   u32_t mmi, h32, hh32, invh, p32;
   ushort invhelp[MPQS_MAX_ADIV_ALL], hhh;
@@ -1234,8 +1238,10 @@ static int mpqs_next_pol()
 }
 #else
 
-//#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
-//   h32+=hh32*p; h32=h32>>16
+/*
+#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
+   h32+=hh32*p; h32=h32>>16
+*/
 {
     u32_t mmi, h32, hh32, p32;
     u32_t cc1, cc2, bbb;
@@ -1280,8 +1286,10 @@ static int mpqs_next_pol()
 /* divisors of A */
     for (i=0; i<mpqs_nAdiv_total; i++)
       if (!mpqs_Adiv_active[i]) {
-//#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
-//   h32+=hh32*p; h32=h32>>16
+/*
+#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
+   h32+=hh32*p; h32=h32>>16
+*/
 
         u32_t mmi, h32, hh32, pi, jj, p32;
 
@@ -1310,10 +1318,13 @@ static int mpqs_next_pol()
         c2+=cc; if (c2>=p) c2-=p;
         mpqs_Adiv_start1[i]=(ushort)c1; mpqs_Adiv_start2[i]=(ushort)c2;
       } else {
-//#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
-//   h32+=hh32*p; h32=h32>>16
+/*
+#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
+   h32+=hh32*p; h32=h32>>16
+*/
+// SMJS Initialise j0 to stop compiler warning, not sure about this one
 
-        u32_t mmi, h32, hh32, jj, cc0, j0, p32;
+        u32_t mmi, h32, hh32, jj, cc0, j0 = 0, p32;
 
         p=mpqs_Adiv_all[i]; p32=(u32_t)p;
         sh=(short)(mpqs_2B%(long long)p);
@@ -2342,7 +2353,8 @@ for (i=0; i<mpqs_gauss_m; i++)
 #ifdef ASM_MPQS_GAUSS
 static int mpqs_rowechelon()
 {
-  return;
+// SMJS Was: return;
+  return 0;
 }
 
 static int mpqs_matrix()

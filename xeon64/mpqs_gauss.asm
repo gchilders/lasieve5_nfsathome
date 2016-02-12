@@ -7,15 +7,21 @@
 # Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 
+#include "underscore.h"
+
 define(tmp_j,%r10d)dnl
 define(k32,%r11d)dnl
 
 function_head(asm_gauss)
 whileloop:
+dnl smjs	movl mpqs_gauss_k(%rip),%eax
 	movl mpqs_gauss_k(%rip),%eax
+
 	decl %eax
 	movl $1,%r8d
+dnl smjs	movl %eax,mpqs_gauss_k(%rip)
 	movl %eax,mpqs_gauss_k(%rip)
+
 	jl end
 	movl %eax,%ecx
 	andl $31,%ecx
@@ -25,22 +31,32 @@ whileloop:
 	movl %ecx,k32
 
 # find j:
+dnl smjs	movl mpqs_gauss_j(%rip),%ecx
 	movl mpqs_gauss_j(%rip),%ecx
-	movq $mpqs_gauss_c,%rdi
  
+dnl smjs	movq $mpqs_gauss_c,%rdi
+	leaq mpqs_gauss_c(%rip),%rdi
+ 
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movl k32,%eax
+
+dnl smjs	movl mpqs_gauss_n32(%rip),%edx
 	movl mpqs_gauss_n32(%rip),%edx
+
 	movq (%rsi,%rcx,8),%rsi
 	subq %rdx,%rax
 	decl %ecx
 	leaq (%rsi,%rax,4),%rsi
+dnl smjs	movl mpqs_gauss_n32(%rip),%eax
 	movl mpqs_gauss_n32(%rip),%eax
 
 .align 16 
 loopj:        # ? cycles per iteration
 	incl %ecx
 entryj:
+dnl smjs        cmpl mpqs_gauss_m(%rip),%ecx
         cmpl mpqs_gauss_m(%rip),%ecx
         jnc  end_of_loop
 	leaq (%rsi,%rax,4),%rsi
@@ -50,13 +66,19 @@ entryj:
 
 endj:       # j in %rcx
 
+dnl smjs	cmpl mpqs_gauss_j(%rip),%ecx
 	cmpl mpqs_gauss_j(%rip),%ecx
 	jz noxch_j
 # exchange rows j and mpqs_gauss_j: uses %rax, %rsi, %r9, %rdx
 
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movq (%rsi,%rcx,8),%rax    # mpqs_gauss_row[j]
+
+dnl smjs	movl mpqs_gauss_j(%rip),%edx
 	movl mpqs_gauss_j(%rip),%edx
+
 	movq (%rsi,%rdx,8),%r9    # mpqs_gauss_row[mpqs_gauss_j]
 	xorq %rdx,%rdx
 xch_loop:
@@ -65,27 +87,45 @@ xch_loop:
 	movq %mm0,(%r9,%rdx,4)
 	movq %mm1,(%rax,%rdx,4)
 	addq $2,%rdx
+
+dnl smjs	cmpl mpqs_gauss_n32(%rip),%edx
 	cmpl mpqs_gauss_n32(%rip),%edx
+
 	jc xch_loop
 
 xch_loop_end:
+dnl smjs	movl mpqs_gauss_j(%rip),%ecx
 	movl mpqs_gauss_j(%rip),%ecx
+
 noxch_j:
-	movq $mpqs_gauss_d,%rsi
+dnl smjs	movq $mpqs_gauss_d,%rsi
+	leaq mpqs_gauss_d(%rip),%rsi
+
+dnl smjs	movl mpqs_gauss_k(%rip),%eax
 	movl mpqs_gauss_k(%rip),%eax
+
 	movw %cx,(%rsi,%rax,2)
 	movw %ax,(%rdi,%rcx,2)
 
 # update mpqs_gauss_j:
+dnl smjs	incl mpqs_gauss_j(%rip)
 	incl mpqs_gauss_j(%rip)
 	movl %ecx,tmp_j
 
 dnl	movq tmp_j,%rcx
+
+dnl smjs	movq mpqs_gauss_mat(%rip),%rsi
 	movq mpqs_gauss_mat(%rip),%rsi
-	movq $mpqs_gauss_col,%rdi
+
+dnl smjs	movq $mpqs_gauss_col,%rdi
+	leaq mpqs_gauss_col(%rip),%rdi
+
 	movl k32,%edx
 	testl %ecx,%ecx
+
+dnl smjs	movl mpqs_gauss_n32(%rip),%eax
 	movl mpqs_gauss_n32(%rip),%eax
+
 	leaq (%rsi,%rdx,4),%rsi
 	movq $2,%rdx
 	jz searchloopAend
@@ -105,7 +145,9 @@ searchloopA:
 
 searchloopAend:
 	incl %ecx
+dnl smjs	cmpl mpqs_gauss_m(%rip),%ecx
 	cmpl mpqs_gauss_m(%rip),%ecx
+
 	leaq (%rsi,%rax,4),%rsi
 	jnc searchloopBend
 .align 16
@@ -117,16 +159,23 @@ searchloopB:
 	cmovnzq %rdx,%r9
 	incq %rcx
 	addq %r9,%rdi
+dnl smjs	cmpl mpqs_gauss_m(%rip),%ecx
 	cmpl mpqs_gauss_m(%rip),%ecx
+
 	leaq (%rsi,%rax,4),%rsi
 	jc searchloopB
 
 searchloopBend:
-	movq $mpqs_gauss_col,%r8
+dnl smjs	movq $mpqs_gauss_col,%r8
+	leaq mpqs_gauss_col(%rip),%r8
+
 	cmpq %r8,%rdi
 	jz whileloop
 	movl tmp_j,%ecx
+
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movq (%rsi,%rcx,8),%rsi
 
 	movl k32,%edx
@@ -140,7 +189,9 @@ searchloopBend:
 .align 16
 outerloop0:
 	movzwq (%r8),%r9
+dnl smjs	movq mpqs_gauss_row(%rip),%rax
 	movq mpqs_gauss_row(%rip),%rax
+
 	movq (%rax,%r9,8),%rax
 	xorl %ecx,%ecx
 innerloop0:
@@ -165,8 +216,12 @@ end:
 	ret
 
 end_of_loop:
-	movq $mpqs_gauss_d,%rdi
+dnl smjs	movq $mpqs_gauss_d,%rdi
+	leaq mpqs_gauss_d(%rip),%rdi
+
+dnl smjs	movl mpqs_gauss_k(%rip),%eax
 	movl mpqs_gauss_k(%rip),%eax
+
 	movw $-1,%r9w
 	movw %r9w,(%rdi,%rax,2)
 	movl %ecx,tmp_j
@@ -176,7 +231,9 @@ end_of_loop:
 entry1:
 	movzwq (%r8),%r9
 	movq (%rsi),%mm0
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movq (%rsi,%r9,8),%rax
 outerloop1:
 	movq (%rax),%mm1
@@ -194,7 +251,10 @@ entry2:
 	movq (%rsi),%mm0
 	movzwq (%r8),%r9
 	movq 8(%rsi),%mm2
+
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movq (%rsi,%r9,8),%rax
 outerloop2:
 	movq (%rax),%mm1
@@ -216,7 +276,10 @@ entry3:
 	movzwq (%r8),%r9
 	movq 8(%rsi),%mm2
 	movq 16(%rsi),%mm4
+
+dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	movq mpqs_gauss_row(%rip),%rsi
+
 	movq (%rsi,%r9,8),%rax
 outerloop3:
 	movq (%rax),%mm1

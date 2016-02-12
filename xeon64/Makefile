@@ -7,11 +7,19 @@
 # Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 
-CFLAGS= -O3
+# gcc49
+CFLAGS= -m64 -Ofast -march=corei7  -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+
+# clang
+#CFLAGS= -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
+#CFLAGS= -g -I/Users/searle/progs/ensc-dependencies/include
+
 #CFLAGS= -g
 include ../paths
 
-CC=gcc $(CFLAGS)
+CC=gcc-4.9 $(CFLAGS)
+#CC=clang $(CFLAGS)
+
 CTANGLE=ctangle
 
 SRCFILES=gcd32.c 32bit.h modinv32.c psp.c Makefile \
@@ -55,13 +63,13 @@ SRCFILES=gcd32.c 32bit.h modinv32.c psp.c Makefile \
 %.dvi: %.tex
 	tex $<
 
-%.s: %.asm
+%.S: %.asm
 	m4 -g  -Dn_i_bits=0 ls-defs.asm $^ > $@
 
-%.o: %.s
+%.o: %.S
 	$(CC) -c $^
 
-.SECONDARY:  *.s
+.SECONDARY:  *.s *.S
 
 .PHONY: bup
 

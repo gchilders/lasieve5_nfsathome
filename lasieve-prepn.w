@@ -21,6 +21,7 @@ void lasieve_setup64(u32_t*,u32_t*,u32_t,i64_t,i64_t,i64_t,i64_t,u32_t*,i32_t);
 #include <sys/types.h>
 #include <math.h>
 
+#include "if.h"
 #include "asm/siever-config.h"
 #include "recurrence6.h"
 #include "asm/32bit.h"

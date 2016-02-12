@@ -1,3 +1,5 @@
+#include "underscore.h"
+
 define(FB,%rcx)dnl current entry of mpqs_FB
 define(FBs,%r8)dnl current entry of mps_FB_start
 define(FBl,%r9)dnl current entry of mpqs_FB_log
@@ -18,17 +20,27 @@ function_head(asm_sieve)
 	pushq %r13
 	pushq %r14
 	pushq %r15
+
+dnl smjs	movzwq mpqs_sievebegin(%rip),%rax
+dnl smjs	movzwq mpqs_sievelen(%rip),sl4
 	movzwq mpqs_sievebegin(%rip),%rax
 	movzwq mpqs_sievelen(%rip),sl4
-	movq $mpqs_FB,FB
-	movq $mpqs_FB_start,FBs
-	movq $mpqs_FB_log,FBl
+
+dnl smjs	movq $mpqs_FB,FB
+dnl smjs	movq $mpqs_FB_start,FBs
+dnl smjs	movq $mpqs_FB_log,FBl
+	leaq mpqs_FB(%rip),FB
+	leaq mpqs_FB_start(%rip),FBs
+	leaq mpqs_FB_log(%rip),FBl
+
 	leaq (FB,%rax,4),FB
 	leaq (FBs,%rax,4),FBs
 	leaq (FBl,%rax),FBl
 	movq sl4,sl
 	shrq $2,sl4
+dnl smjs	movq mpqs_sievearray(%rip),sieve_interval
 	movq mpqs_sievearray(%rip),sieve_interval
+
 	movq sieve_interval,sieveend
 	addq sl,sieveend
 

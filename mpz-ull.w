@@ -21,7 +21,7 @@ typedef unsigned long long ullong;
 #include "gmp-aux.h"
 
 #ifdef ULL_NO_UL
-static ulong have_init=0;
+static unsigned int have_init=0;
 static mpz_t auxz,auxz2;
 
 #define ULLONG_MAX 0xffffffffffffffffULL

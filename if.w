@@ -16,9 +16,16 @@ We also offer two ways of exiting if a bug is found, and a way
 to report how things are proceeding.
 
 @(if.h@>=
+#ifdef _WIN64
+#define NEED_ASPRINTF
+#define NEED_FNMATCH
+#define NEED_GETLINE
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef HAVE_BOINC
         #include <stdarg.h>
@@ -63,13 +70,14 @@ int read_u32(FILE*,u32_t*,size_t);
 #define read_i32(ofile,buffer,count) fread((void*)buffer,sizeof(i32_t),count,ofile)
 #endif /* littlebig end */
 int yn_query(char *fmt,...);
-ssize_t skip_blank_comments(char**,size_t*,FILE*);
+ssize_t skip_blanks_comments(char**,size_t*,FILE*);
 int u32_cmp012(const void*,const void*);
 int u32_cmp210(const void*,const void*);
 int u64_cmp012(const void*,const void*);
 int u64_cmp210(const void*,const void*);
 
 #ifdef NEED_ASPRINTF
+int vasprintf (char **ptr, const char *template, va_list ap);
 int asprintf(char**,const char *,...);
 #endif
 
@@ -78,16 +86,35 @@ ssize_t getline(char**,size_t*,FILE*);
 #endif
 
 #ifdef NEED_FNMATCH
-int fnmatch (char*, char*, int)
+int fnmatch (char*, char*, int);
 #endif
 
 typedef unsigned long long ullong;
 
+// SMJS Added
+#ifdef _WIN64
+#include <inttypes.h>
+#define UL_FMTSTR "%"PRIu64
+#define DLL_FMTSTR "%"PRId64
+#define UL_XFMTSTR "%"PRIX64
+#define UL_xFMTSTR "%"PRIx64
+#define SIZET_FMTSTR "%zu"
+#else
+#define UL_FMTSTR "%lu"
+#define DLL_FMTSTR "%ld"
+#define UL_XFMTSTR "%lX"
+#define UL_xFMTSTR "%lx"
+#define SIZET_FMTSTR "%zu"
+#endif
+
 @
 @c
+
 #include <time.h>
 #include <unistd.h>
+#ifndef _WIN64 // SMJS
 #include <sys/times.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -99,7 +126,7 @@ typedef unsigned long long ullong;
 #include "if.h"
 
 int verbose=0;
-static ulong used_cols,ncol=80;
+static unsigned int used_cols,ncol=80;
 
 @
 @c
@@ -107,19 +134,49 @@ void *xmalloc(size_t size)
 {
   char *x;
   if(size==0) return NULL;
-  if((x=malloc(size))==NULL) complain("xmalloc: %m");
+  if((x=malloc(size))==NULL) complain("xmalloc: %m\n");
   return x;
 }
 
 @
 @c
+#if defined( _MSC_VER ) && defined( _WIN64 )
+#error _MSC_VER
+void*xvalloc(size_t size)
+{
+    char*x;
+    static long g_pagesize = 0;
+    if(!g_pagesize)
+    {
+        SYSTEM_INFO system_info;
+        GetSystemInfo (&system_info);
+        g_pagesize = system_info.dwPageSize;
+    }
+    if(size==0)return NULL;
+    if((x = _aligned_malloc(size, g_pagesize)) == NULL) complain("xvalloc: %m\n");
+    return x;
+}
+
+#elif defined (_WIN64)
+
+void*xvalloc(size_t size)
+{
+  char*x;
+  if (size==0) return NULL;
+  if((x= _aligned_malloc(size,4096))==NULL) complain("xvalloc: %m\n");
+  return x;
+}
+
+#else
+
 void *xvalloc(size_t size)
 {
   char *x;
   if(size==0) return NULL;
-  if((x=valloc(size))==NULL) complain("xvalloc: %m");
+  if((x=valloc(size))==NULL) complain("xvalloc: %m\n");
   return x;
 }
+#endif
 
 @
 @c
@@ -128,7 +185,7 @@ xcalloc(size_t n,size_t s)
 {
   void *p;
   if(n==0 || s==0) return NULL;
-  if((p=calloc(n,s))==NULL) complain("calloc: %m");
+  if((p=calloc(n,s))==NULL) complain("calloc: %m\n");
   return p;
 }
 
@@ -141,7 +198,7 @@ void *xrealloc(void *x,size_t size)
     if(x!=NULL) free(x);
     return NULL;
   }
-  if((y=realloc(x,size))==NULL && size!=0) complain("xrealloc: %m");
+  if((y=realloc(x,size))==NULL && size!=0) complain("xrealloc: %m\n");
   return y;
 }
 
@@ -150,12 +207,40 @@ to |stderr|.
 @c
 FILE *logfile=NULL;
 
+// SMJS Hacked to allow machines without %m specifier to work
+//      Assumes %m occurs at end of format str (is true for all current messages)
+#define MAXMSGLEN 20000
 void complain(char *fmt,...)
 {
+  char msg[MAXMSGLEN];
+
   va_list arglist;
   va_start(arglist,fmt);
-  vfprintf(stderr,fmt,arglist);
-  if(logfile != NULL) vfprintf(logfile,fmt,arglist);
+
+  int qlen = vsnprintf(msg, MAXMSGLEN, fmt,arglist);
+
+  if (qlen < 0 || qlen > MAXMSGLEN) {
+    fprintf(stderr, "ERROR: vsnprintf call failed during complain\n");
+  } else {
+#if defined (__APPLE__) || defined (_WIN64)
+    int lenfmt = strlen(fmt);
+    if (lenfmt > 4 && fmt[lenfmt-3] == '%' && fmt[lenfmt-2] == 'm' && fmt[lenfmt-1] == '\n') {
+// Remove m and newline
+      msg[qlen-2] = '\0';
+// Add sterror(errno)
+      snprintf(msg,MAXMSGLEN,"%s%s\n",msg,strerror(errno));
+    }
+#endif
+  }
+
+  // What ever happened in vsnprintf try to print message
+  fprintf(stderr,"%s",msg);
+
+  va_end(arglist);
+
+  if(logfile != NULL) {
+    fprintf(logfile,"%s",msg);
+  }
 #ifdef HAVE_BOINC 
     boinc_finish(1);       
 #else                
@@ -190,7 +275,7 @@ void logbook(int l, char *fmt,...)
   if(l<verbose) {
     va_list arglist;
     char *output_str;
-    ulong sl;
+    unsigned int sl;
     va_start(arglist,fmt);
     vasprintf(&output_str,fmt,arglist);
     sl=strlen(output_str);
@@ -269,7 +354,7 @@ allocated bytes in |*iline_alloc|.
 A line is skiped iff it starts with '#' or consists of blank and tab
 characters.
 @c
-int
+ssize_t
 skip_blanks_comments(char **iline,size_t *iline_alloc,FILE *ifi)
 {
   while(getline(iline,iline_alloc,ifi)>0) {
@@ -496,10 +581,10 @@ int asprintf (char **ptr, const char *template, ...)
 int fnmatch (char *s, char *fname, int dummy)
 {
   while (*fname) fname++;
-  if (*(fname--) != 'z') return 0;
-  if (*(fname--) != 'g') return 0;
-  if (*(fname--) != '.') return 0;
-  return 1;
+  if (*(fname--) != 'z') return 1;
+  if (*(fname--) != 'g') return 1;
+  if (*(fname--) != '.') return 1;
+  return 0;
 }
 #endif
 

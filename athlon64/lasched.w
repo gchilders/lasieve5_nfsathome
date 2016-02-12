@@ -29,19 +29,19 @@ u32_t *lasched_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t,u32_t);
 
 #define U16_SHIFT (CHAR_BIT*sizeof(u16_t))
 
-u32_t *lasched0(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched2(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched3(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched0nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched1nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched2nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched3nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched0(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched2(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched3(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched0nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched1nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched2nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched3nt(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
 
-u32_t *lasched0_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched1_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched2_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
-u32_t *lasched3_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched0_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched1_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched2_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
+u32_t * ASM_ATTR lasched3_1(u32_t*,u32_t*,u32_t*,u32_t,u32_t**,u32_t);
 
 u32_t *
 lasched_1(ri,ij_ptr,ij_ptr_ub,n1_j,sched_ptr,fbi_offs,ot)

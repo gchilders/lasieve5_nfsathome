@@ -5,7 +5,9 @@
 #include <sys/types.h>
 
 #include <gmp.h>
+#include "siever-config.h"
 #include "montgomery_mul.h"
+#include "../if.h"
 
 extern ulong montgomery_inv_n;
 extern ulong *montgomery_modulo_n;

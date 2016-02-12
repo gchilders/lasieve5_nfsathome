@@ -20,7 +20,7 @@ hard disk space on storing its results.
 #include <sys/types.h>
 #include <limits.h>
 #include <unistd.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "gmp.h"

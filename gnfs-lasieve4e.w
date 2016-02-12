@@ -57,6 +57,24 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 	#define fopen(i,j) boinc_fopen(i,j)
 #endif
 
+// SMJS Added
+#include <assert.h>
+#include <strings.h>
+// SMJS Windows gethostname is in:
+//#include <winsock2.h>
+// but including that leads to conflicts for u32_read
+
+#ifdef _WIN64
+
+//#define WIN32_LEAN_AND_MEAN
+//#include <windows.h>
+
+// Interesting, windows doesn't seem to have bzero, but when compiled optmised its OK
+// because its optimised out, so only complains if compiled -g
+// Remember to remove prototype from siever_config.w if you define this
+//#define bzero(p,s) memset((p),0,(s))
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef SI_MALLOC_DEBUG
@@ -101,6 +119,13 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 #include "real-poly-aux.h"
 #include "gmp-aux.h"
 #include "lasieve-prepn.h"
+#include "input-poly.h"
+#include "fbgen64.h"
+
+// SMJS Added
+#ifndef NEED_FNMATCH
+#include <fnmatch.h>
+#endif
 
 @ These are the possible values for |TDS_PRIMALITY_TEST| and
 |TDS_MPQS|, which control when the primality tests and mpqs for trial
@@ -118,6 +143,7 @@ division survivors are done.
 
 #include "asm/lasched.h"
 #include "asm/medsched.h"
+#include "asm/MMX-TD.h"
 
 #define L1_SIZE (1UL<<L1_BITS)
 
@@ -161,7 +187,7 @@ static i64_t tdsi_clock[2]={0,0},tds1_clock[2]={0,0},tds2_clock[2]={0,0};
 static i64_t tds3_clock[2]={0,0},tds4_clock[2]={0,0};
 static u32_t n_abort1=0, n_abort2=0;
 
-char *basename;
+char *las_basename;
 char *input_line=NULL;
 size_t input_line_alloc=0;
 
@@ -286,16 +312,56 @@ static u32_t n_i,n_j,i_bits,j_bits;
 @<Global declarations@>@;
 @<Trial division declarations@>@;
 
-void Usage()
+// Preliminary usage text, needs editting to be more informative
+static char usageText[] = 
+// Not sure of correct acknowledgement text so leave out for now
+//"This program is part of the lasieve package by Jens Franke and\n"
+//"T. Kleinjung.\n\n"
+//"Work to adapt it for use in GGNFS and NFS@@Home by several people including\n"
+//"Sergey Batalov, Greg Childers, 'Dan Ee', Yeong Uk Jo, Steve Searle...\n\n"
+" Usage: %s [-o <outfile>] [-k] [-v] [[-n<procnum>] | [-N<procnum>]] [-a | -r]\n" 
+"                [-c <int>] [-f <<int> | <int>:<int>:<int>>] [-i <int>] [-b <string>]\n"
+"                [-q <int>] [-t <int>] [-z]\n" 
+"                [-C <int>] [-F] [-J <int>] [-L <cmd>] [-M <int>] [-P <int>] [-R]\n"
+"                [-Z <<int>:<int> | <int>>] [-S <float>]  \n" 
+"                [string (if -b not specified)]\n"
+"   -o   specify output filename (can be - for stdout, add .gz for gzipped output, defaults \n"
+"        to '%%s.lasieve-%%u.%%llu-%%llu',las_basename, special_q_side,first_spq,last_spq\n"
+"   -k   keep factorbase\n" 
+"   -v   verbose (can be specified multiple times to raise verbosity level)\n" 
+"   -N or -n specify a 'process number', -n also turns on signal handling (SIGTERM and SIGINT)\n" 
+"   -a   specify algebraic special q side\n"
+"   -r   specify rational special q side\n"
+"   -c   sieve count\n"
+"   -f   specify either just first_spq or first_spq, first_spq1 and first_root.\n"
+"        If only first_spq specified, first_spq1 is set to first_spq and first_root is set to 0\n"
+"   -i   specify first sieve side\n"
+"   -b   basename for reading input from (can also be specified as first trailing arg)\n"
+"   -h   print usage string and exit\n"
+"   -q   special q side\n"
+"   -t   specify first td side\n"
+"   -z   compress output\n"
+"   -C   spq_count\n"
+"   -F   force AFB calculation\n"
+"   -J   specify J bits\n"
+"   -L   specifiy a command to be executed to determine if the system load is too high.\n"
+"        If that program doesn't return 0, exit\n"
+"   -M   specify first_mpqs_side\n"
+"   -P   specify first_psp_side\n"
+"   -R   resume (requires -o and doesn't allow - for filename nor zipped output)\n"
+"   -Z   specify rescale range (if only one opt arg specified range begins at 0)\n"
+"   -S   specify sigma (skew)\n\n";
+
+void Usage(char *cmdName)
 {
-  printf("Rescale moved from R to Z.\n");
-  complain("Usage");
+  printf("NOTE: Rescale moved from R to Z.\n");
+  complain(usageText, cmdName);
 }
 
 static u32_t n_prereports=0,n_reports=0,n_rep1=0,n_rep2=0;
 static u32_t n_tdsurvivors[2]={0,0}, n_psp=0, n_cof=0;
-static FILE *ofile;
-static char *ofile_name;
+static FILE *g_ofile;
+static char *g_ofile_name;
 
 #ifdef STC_DEBUG
 FILE *debugfile;
@@ -360,9 +426,9 @@ void logTotalTime()
 /**************************************************/
 {
   double t=sTime()-sieveStartTime;
-  FILE *fp=fopen("ggnfs.log", "a");
+  FILE *fp=fopen("ggnfs.log", "ab");
   
-  fprintf(fp, "\tLatSieveTime: %ld\n", (long)t);
+  fprintf(fp, "\tLatSieveTime: "UL_FMTSTR"\n", (u64_t)t);
   fclose(fp);
 }
 
@@ -469,7 +535,7 @@ int main(int argc, char **argv)
   sieveStartTime = sTime();
   
 #ifdef STC_DEBUG
-  debugfile=fopen("rtdsdebug","w");
+  debugfile=fopen("rtdsdebug","wb");
 #endif
   @<Getopt@>@;
   siever_init();
@@ -480,12 +546,12 @@ int main(int argc, char **argv)
   @<Prepare the factor base logarithms@>@;
   @<Prepare the lattice sieve scheduling@>@;
   @<TD Init@>@;
-  read_strategy(&strat,max_factorbits,basename,max_primebits);
+  read_strategy(&strat,max_factorbits,las_basename,max_primebits);
   all_spq_done=1;
   @<Do the lattice sieving between |first_spq| and |last_spq|@>@;
   if(sieve_count != 0) {
-    if(zip_output != 0) pclose(ofile);
-    else fclose(ofile);
+    if(zip_output != 0) pclose(g_ofile);
+    else fclose(g_ofile);
   }
   logbook(0,"%u Special q, %u reduction iterations\n",n_spq, n_iter);
 
@@ -501,7 +567,9 @@ int main(int argc, char **argv)
 {
   u64_t *r; /* The prime ideals above this special q number. */
   initprime32(&special_q_ps);
+#ifndef NO_TD_CLOCK
   last_clock=clock();
+#endif
   n_spq=0;
   n_spq_discard=0;
   r=xmalloc(poldeg_max*sizeof(*r));
@@ -580,12 +648,19 @@ int main(int argc, char **argv)
       u32_t termination_condition;
 
       if(r[root_no]<first_root) continue;
+// For Windows try _setjmp with 0 as extra arg, which seems to work
+// a *bit* more often than ordinary setjmp which fails a lot on
+// ctrl-c (SIGINT) handling
+#ifdef _WIN64
+      if((termination_condition=_setjmp(termination_jb,0))!=0) {
+#else
       if((termination_condition=setjmp(termination_jb))!=0) {
+#endif
 	if(termination_condition==USER_INTERRUPT)
 	  @<Save this special q and finish@>@;
 	else {/* |termination_condition==SCHED_PATHOLOGY| */
 	  //char *cmd;
-	  //asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",basename,
+	  //asprintf(&cmd,"touch badsched.%s.%u.%llu.%llu",las_basename,
 		//   special_q_side,special_q,r[root_no]);
 	  //system(cmd);
 	  //free(cmd);
@@ -605,10 +680,10 @@ int main(int argc, char **argv)
       }
       n_spq++;
       @<Calculate |spq_i| and |spq_j|@>@;
-      // fprintf(ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
+      // fprintf(g_ofile,"# Start %llu %llu (%d,%d) (%d,%d)\n",
 	  //    special_q,r[root_no],a0,b0,a1,b1);
       @<Do the sieving and td@>@;
-      //fprintf(ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
+      //fprintf(g_ofile,"# Done %llu %llu (%d,%d) (%d,%d)\n",
 	  //    special_q,r[root_no],a0,b0,a1,b1);
       if (n_spq>=spq_count) break;
     }
@@ -627,8 +702,19 @@ int main(int argc, char **argv)
 	boincstatus(pct);
 #else
        if(verbose) {
+
+/* SMJS
 	       fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel) ", 
 		      (unsigned int)yield, (unsigned int)special_q, (tNow - tStart)/yield);
+*/
+
+          int eta = (int)(((double)last_spq - special_q)*
+                      (tNow - tStart)/((double)special_q - first_spq+1)/60);
+
+          fprintf(stderr, "\rtotal yield: %u, q=%u (%1.5lf sec/rel; ETA %dh%02dm)  ", 
+                  (unsigned int)yield, (unsigned int)special_q, (tNow - tStart)/yield,
+                  eta/60, eta%60);
+
 	       fflush(stderr);
        }
 #endif
@@ -682,12 +768,13 @@ static u64_t nextq64(u64_t lb)
 
   hn=xmalloc(100);
   if(gethostname(hn,99)==0)
-    asprintf(&ofn,"%s.%s.last_spq%d",basename,hn,process_no);
-  else asprintf(&ofn,"%s.unknown_host.last_spq%d",basename,process_no);
+    asprintf(&ofn,"%s.%s.last_spq%d",las_basename,hn,process_no);
+  else asprintf(&ofn,"%s.unknown_host.last_spq%d",las_basename,process_no);
   free(hn);
 
-  if((of=fopen(ofn,"w"))!=0) {
-    fprintf(of,"%llu\n",special_q);
+  if((of=fopen(ofn,"wb"))!=0) {
+// SMJS    fprintf(of,"%llu\n",special_q);
+    fprintf(of,UL_FMTSTR"\n",special_q);
     fclose(of);
   }
   free(ofn);
@@ -806,13 +893,13 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
   FILE *input_data;
   u32_t i;
 
-  ofile_name=NULL;
+  g_ofile_name=NULL;
   zip_output=0;
   special_q_side=NO_SIDE;
   sigma=0;
   keep_factorbase=0;
   g_resume=0;
-  basename=NULL;
+  las_basename=NULL;
   first_spq=0;
   sieve_count=1;
   force_aFBcalc=0;
@@ -829,15 +916,17 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 
   spq_count=U32_MAX;
 
-#define NumRead64(x) if(sscanf(optarg,"%llu",&x)!=1) Usage()
-#define NumRead(x) if(sscanf(optarg,"%u",&x)!=1) Usage()
-#define NumRead16(x) if(sscanf(optarg,"%hu",&x)!=1) Usage()
+//SMJS#define NumRead64(x) if(sscanf(optarg,"%llu",&x)!=1) Usage(argv[0])
+#define NumRead64(x) if(sscanf(optarg,UL_FMTSTR,&x)!=1) Usage(argv[0])
+#define NumRead(x) if(sscanf(optarg,"%u",&x)!=1) Usage(argv[0])
+#define NumRead16(x) if(sscanf(optarg,"%hu",&x)!=1) Usage(argv[0])
 
   append_output=0;
-  while((option=getopt(argc,argv,"C:FJ:L:M:N:P:RS:Z:ab:c:f:i:kn:o:q:rt:vz"))!=-1) {
+
+  while((option=getopt(argc,argv,"C:FJ:L:M:N:P:RS:Z:ab:c:f:hi:kn:o:q:rt:vz"))!=-1) {
     switch(option) {
     case 'C':
-      if (sscanf(optarg,"%u",&spq_count)!=1)  Usage();
+      if (sscanf(optarg,"%u",&spq_count)!=1)  Usage(argv[0]);
       break;
     case 'F':
       force_aFBcalc=1;
@@ -855,17 +944,18 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       NumRead16(first_psp_side);
       break;
     case 'R':
-	  g_resume = 1; break;
+      g_resume = 1; 
+      break;
     case 'Z':
       if (sscanf(optarg,"%u:%u",rescale,rescale+1)!=2) {
         rescale[1]=0;
-        if (sscanf(optarg,"%u",rescale)!=1) Usage();
+        if (sscanf(optarg,"%u",rescale)!=1) Usage(argv[0]);
       }
       break;
     case 'S':
       if(sscanf(optarg,"%f",&sigma) != 1) {
         errprintf("Cannot read floating point number %s\n",optarg);
-        Usage();
+        Usage(argv[0]);
       }
       break;
     case 'a':
@@ -876,20 +966,28 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       special_q_side=ALGEBRAIC_SIDE;
       break;
     case 'b':
-      if(basename != NULL) errprintf("Ignoring -b %s\n",basename);
-      else basename=optarg;
+      if(las_basename != NULL) errprintf("Ignoring -b %s\n",las_basename);
+      else las_basename=optarg;
       break;
     case 'c':
       NumRead64(sieve_count);
       break;
     case 'f':
+/* SMJS
       if(sscanf(optarg,"%llu:%llu:%llu",&first_spq,&first_spq1,
                 &first_root)!=3) {
-	if(sscanf(optarg,"%llu",&first_spq)==1) {
+*/
+      if(sscanf(optarg,UL_FMTSTR":"UL_FMTSTR":"UL_FMTSTR,&first_spq,&first_spq1,
+                &first_root)!=3) {
+// SMJS	if(sscanf(optarg,"%llu",&first_spq)==1) {
+	if(sscanf(optarg,UL_FMTSTR,&first_spq)==1) {
 	  first_spq1=first_spq;
 	  first_root=0;
-	} else Usage();
+	} else Usage(argv[0]);
       } else append_output=1;
+      break;
+    case 'h':
+      Usage(argv[0]);
       break;
     case 'i':
       if(sscanf(optarg,"%hu",&cmdline_first_sieve_side)!=1)
@@ -900,11 +998,12 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
       break;
     case 'n':
       catch_signals=1;
+      // SMJS Fall through here appears to be deliberate
     case 'N':
       NumRead(process_no);
       break;
     case 'o':
-      ofile_name=optarg;
+      g_ofile_name=optarg;
       break;
     case 'q':
       NumRead16(special_q_side);
@@ -937,21 +1036,23 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
     
     if (g_resume != 0) {
       char buf[LINE_BUF_SIZE];
-      int ret;
+// SMJS Initialise ret to stop compiler warning
+      int ret = 0;
       
       if (zip_output != 0)
 	complain("Cannot resume gzipped file. gunzip, and retry without -z\n");
-      if (ofile_name == NULL)
+      if (g_ofile_name == NULL)
 	complain("Cannot resume without the file name\n");
-      if (strcmp(ofile_name, "-") == 0)
+      if (strcmp(g_ofile_name, "-") == 0)
 	complain("Cannot resume using stdout\n");
-      if ((ofile = fopen(ofile_name, "ab+")) == NULL)
-	complain("Cannot open %s for append: %m\n", ofile_name);
-      while(fgets(buf, LINE_BUF_SIZE, ofile)) {
+      if ((g_ofile = fopen(g_ofile_name, "ab+")) == NULL)
+	complain("Cannot open %s for append: %m\n", g_ofile_name);
+      while(fgets(buf, LINE_BUF_SIZE, g_ofile)) {
 	    ret = parse_q_from_line(buf);
       }
-      if(ret < 0) fprintf(ofile, "\n"); /* encapsulating the last incomplete line */
-      printf(" Resuming with -f %d -c %d\n", first_spq, sieve_count);
+      if(ret < 0) fprintf(g_ofile, "\n"); /* encapsulating the last incomplete line */
+      // SMJS printf(" Resuming with -f %d -c %d\n", first_spq, sieve_count);
+      printf(" Resuming with -f "UL_FMTSTR" -c "UL_FMTSTR"\n", first_spq, sieve_count);
       first_spq1 = first_spq;
     }
   
@@ -961,15 +1062,15 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 #error Must #define I_bits
 #endif
 
-  if(optind<argc && basename==NULL) {
-    basename=argv[optind];
+  if(optind<argc && las_basename==NULL) {
+    las_basename=argv[optind];
     optind++;
   }
   if(optind<argc) fprintf(stderr,"Ignoring %u trailing command line args\n",
                           argc-optind);
-  if(basename==NULL) basename="gnfs";
-  if((input_data=fopen(basename,"r"))==NULL) {
-    complain("Cannot open %s for input of nfs polynomials: %m\n",basename);
+  if(las_basename==NULL) las_basename="gnfs";
+  if((input_data=fopen(las_basename,"rb"))==NULL) {
+    complain("Cannot open %s for input of nfs polynomials: %m\n",las_basename);
   }
   mpz_init(N);
   mpz_init(m);
@@ -1005,8 +1106,8 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 
     sieve_min[0] = sieve_min[1]=0;
     
-    if (!(fp = fopen(basename, "rb"))) {
-      printf("Error opening %s for read!\n", basename);
+    if (!(fp = fopen(las_basename, "rb"))) {
+      printf("Error opening %s for read!\n", las_basename);
       return -1;
     }
     input_poly(N, poly, poldeg, poly + 1, poldeg + 1, m, fp);
@@ -1094,11 +1195,12 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
     if(sigma==0) complain("Please set a skewness\n");
     if(special_q_side == NO_SIDE) {
       errprintf("Please use -a or -r\n");
-      Usage();
+      Usage(argv[0]);
     }
     if((u64_t)(FB_bound[special_q_side])>first_spq) {
       FB_bound[special_q_side]=(float) first_spq-1;
-	  if(verbose) printf("Warning:  lowering FB_bound to %llu.\n",first_spq-1);
+	  //SMJS if(verbose) printf("Warning:  lowering FB_bound to %llu.\n",first_spq-1);
+	  if(verbose) printf("Warning:  lowering FB_bound to "UL_FMTSTR"\n",first_spq-1);
 	  //complain("Special q lower bound %llu below rFB bound %g\n",
 	  //       first_spq,FB_bound[special_q_side]);
     }
@@ -1143,31 +1245,42 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 @<Open the output file@>=
 if(sieve_count != 0) {
   /* Output file was given as a command line option. */
-  if(ofile_name==NULL) {
+  if(g_ofile_name==NULL) {
     if(zip_output==0) {
-      asprintf(&ofile_name,"%s.lasieve-%u.%llu-%llu",basename,
+/* SMJS
+      asprintf(&g_ofile_name,"%s.lasieve-%u.%llu-%llu",las_basename,
+               special_q_side,first_spq,last_spq);
+*/
+      asprintf(&g_ofile_name,"%s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR,las_basename,
                special_q_side,first_spq,last_spq);
     } else {
-      asprintf(&ofile_name,
+/* SMJS
+      asprintf(&g_ofile_name,
 	       append_output==0 ?
 	       "gzip --best --stdout > %s.lasieve-%u.%llu-%llu.gz" :
 	       "gzip --best --stdout >> %s.lasieve-%u.%llu-%llu.gz",
-               basename,special_q_side,first_spq,last_spq);
+               las_basename,special_q_side,first_spq,last_spq);
+*/
+      asprintf(&g_ofile_name,
+	       append_output==0 ?
+	       "gzip --best --stdout > %s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR".gz" :
+	       "gzip --best --stdout >> %s.lasieve-%u."UL_FMTSTR"-"UL_FMTSTR".gz",
+               las_basename,special_q_side,first_spq,last_spq);
     }
   } else {
-    if(strcmp(ofile_name,"-")==0) {
+    if(strcmp(g_ofile_name,"-")==0) {
       if(zip_output==0) {
-        ofile=stdout;
-        ofile_name="to stdout";
+        g_ofile=stdout;
+        g_ofile_name="to stdout";
         goto done_opening_output;
-      } else ofile_name="gzip --best --stdout";
+      } else g_ofile_name="gzip --best --stdout";
     } else {
-      if(fnmatch("*.gz",ofile_name,0)==0) {
+      if(fnmatch("*.gz",g_ofile_name,0)==0) {
         char *on1;
 
         zip_output=1;
-        on1=strdup(ofile_name);
-        asprintf(&ofile_name,"gzip --best --stdout > %s",on1);
+        on1=strdup(g_ofile_name);
+        asprintf(&g_ofile_name,"gzip --best --stdout > %s",on1);
         free(on1);
       } else zip_output=0;
     }
@@ -1177,20 +1290,20 @@ if(sieve_count != 0) {
         goto done_opening_output;
       }
     if(append_output>0) {
-      ofile=fopen(ofile_name,"a");
+      g_ofile=fopen(g_ofile_name,"ab");
     } else {
-	  if ((ofile = fopen(ofile_name, "r")) != NULL)
+      if ((g_ofile = fopen(g_ofile_name, "rb")) != NULL)
 	    complain(" Will not overwrite existing file %s for output;" 
-		  "rename it, move it away, or use -R option (resume)\n", ofile_name);
-	  ofile=fopen(ofile_name,"w");
+                 "rename it, move it away, or use -R option (resume)\n", g_ofile_name);
+      g_ofile=fopen(g_ofile_name,"wb");
 	}
-    if(ofile==NULL) complain("Cannot open %s for output: %m\n",ofile_name);
+    if(g_ofile==NULL) complain("Cannot open %s for output: %m\n",g_ofile_name);
   } else {
-    if((ofile=popen(ofile_name,"w"))==NULL)
-    complain("Cannot exec %s for output: %m\n",ofile_name);
+    if((g_ofile=popen(g_ofile_name,"w"))==NULL)
+    complain("Cannot exec %s for output: %m\n",g_ofile_name);
   }
   done_opening_output:
-  fprintf(ofile,"");
+  fprintf(g_ofile,"");
 }
 
 @ For this version of the siever, we strive for cache efficiency of
@@ -1243,8 +1356,8 @@ factor base primes on both sides which are |>L1_SIZE|.
       if(fbi1[side]<fbis[side]) fbi1[side]=fbis[side];
     } else {
       u32_t j,k,l;
-      asprintf(&afbname,"%s.afb.%u",basename,side);
-      if(force_aFBcalc>0 || (afbfile=fopen(afbname,"r"))==NULL) {
+      asprintf(&afbname,"%s.afb.%u",las_basename,side);
+      if(force_aFBcalc>0 || (afbfile=fopen(afbname,"rb"))==NULL) {
 	@<Generate |aFB|@>@;
 	if(keep_factorbase>0) @<Save |aFB|@>@;
       } else {
@@ -1333,7 +1446,7 @@ fclose(afbfile);
 @
 @<Save |aFB|@>=
 {
-  if((afbfile=fopen(afbname,"w"))==NULL) {
+  if((afbfile=fopen(afbname,"wb"))==NULL) {
     complain("Cannot open %s for output of aFB: %m\n",afbname);
   }
   if(write_u32(afbfile,&(FBsize[side]),1)!=1) {
@@ -1613,7 +1726,17 @@ starting from |first_event[side][oddness_type-1]+2*fbi|.
 The recurrence information for the primes above |L1_SIZE| is stored starting
 from |LPri1[side]|.
 @<Global decl...@>=
-static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+// Change from revision 382 (started in r367) static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+// SMJS static u32_t j_per_strip,jps_bits,jps_mask,n_strips;
+#if I_bits<=L1_BITS
+static u32_t j_per_strip,jps_bits;
+#else
+#define j_per_strip 1
+#define jps_bits    0
+#endif
+static u32_t n_strips;
+//SMJS End replaced
+
 static struct schedule_struct {
   u16_t ***schedule;
   u32_t *fbi_bounds;
@@ -1667,9 +1790,18 @@ fss_sv2=xvalloc(L1_SIZE);
 tiny_sieve_buffer=xmalloc(TINY_SIEVEBUFFER_SIZE);
 if(n_i>L1_SIZE)
      complain("Strip length %u exceeds L1 size %u\n",n_i,L1_SIZE);
+
+// SMJS From r382 (started in r367)  added #if
+#if I_bits<=L1_BITS
+  j_per_strip= L1_SIZE/n_i;
+  jps_bits= L1_BITS-i_bits;
+#endif
+
+/* SMJS Replaced with above
 j_per_strip=L1_SIZE/n_i;
-jps_bits=L1_BITS-i_bits;
-jps_mask=j_per_strip-1;
+//jps_bits=L1_BITS-i_bits;
+*/
+// SMJS From r367 remove jps_mask=j_per_strip-1;
 if(j_per_strip != 1<<jps_bits)
      Schlendrian("Expected %u j per strip, calculated %u\n",
                  j_per_strip,1<<jps_bits);
@@ -1760,11 +1892,27 @@ and |1/sqrt(sigma)|.
 	   statistical independence of sieving events. */
 #ifndef SCHED_TOL
 #ifndef NO_SCHEDTOL
-#define SCHED_TOL 2
+// SMJS From r351
+// Was #define SCHED_TOL 2
+#define SCHED_PAD 48
+#if I_bits<15
+/* no change here, there were no sched.pathologies, and memory footprint is small */
+ #define SCHED_TOL 2
+#else
+/*
+these values are experimental; report
+SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430
+*/
+ #define SCHED_TOL 1.2
+#endif
 #endif
 #endif
 #ifdef SCHED_TOL
-	allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+// SMJS	allocate=rint(SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
+        assert(rint(SCHED_PAD + SCHED_TOL * n_i * j_per_strip * log(log(fbp_ub) /
+                    log(fbp_lb))*SE_SIZE) <= ULONG_MAX);
+
+        allocate=(size_t)rint(SCHED_PAD + SCHED_TOL*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
 #else
 	allocate=rint(sched_tol[i]*n_i*j_per_strip*log(log(fbp_ub)/log(fbp_lb)));
 #endif
@@ -1956,10 +2104,12 @@ static u32_t j_offset;
 #ifdef USE_MEDSCHED
       @<Medsched@>;
       {
+#ifndef NO_TD_CLOCK
 	clock_t new_clock;
 	new_clock=clock();
 	medsched_clock+=new_clock-last_clock;
 	last_clock=new_clock;
+#endif
       }
 #endif
       for(s=first_sieve_side,stepno=0;stepno<2;stepno++,s=1-s) {
@@ -1970,17 +2120,21 @@ static u32_t j_offset;
 	if(s==1 && ncand==0)
 	  nzss[0]++;
 #endif
+#ifndef NO_TD_CLOCK
 	new_clock=clock();
 	clock_diff=new_clock-last_clock;
 	si_clock[s]+=clock_diff;
 	sieve_clock+=clock_diff;
 	last_clock=new_clock;
+#endif
 	@<Sieve with the small FB primes@>@;
+#ifndef NO_TD_CLOCK
 	new_clock=clock();
 	clock_diff=new_clock-last_clock;
 	s1_clock[s]+=clock_diff;
 	sieve_clock+=clock_diff;
 	last_clock=new_clock;
+#endif
         if (rescale[s]) {
 #ifndef ASM_RESCALE
           u32_t rsi, r;
@@ -2010,20 +2164,24 @@ static u32_t j_offset;
 	continue;
 #endif
 	@<Sieve with the medium FB primes@>@;
+#ifndef NO_TD_CLOCK
 	new_clock=clock();
 	clock_diff=new_clock-last_clock;
 	s2_clock[s]+=clock_diff;
 	sieve_clock+=clock_diff;
 	last_clock=new_clock;
+#endif
 	@<Sieve with the large FB primes@>@;
 #if 0
 	dumpsieve(j_offset,s);
 #endif
+#ifndef NO_TD_CLOCK
 	new_clock=clock();
 	clock_diff=new_clock-last_clock;
 	sieve_clock+=clock_diff;
 	s3_clock[s]+=clock_diff;
 	last_clock=new_clock;
+#endif
 
 	if(s==first_sieve_side) {
 #ifdef GCD_SIEVE_BOUND
@@ -2033,20 +2191,24 @@ static u32_t j_offset;
 	}
 	else
 	  @<Final candidate search@>@;
+#ifndef NO_TD_CLOCK
 	new_clock=clock();
 	clock_diff=new_clock-last_clock;
 	sieve_clock+=clock_diff;
 	cs_clock[s]+=clock_diff;
 	last_clock=new_clock;
+#endif
       }
 #ifndef BADSCHED
       trial_divide();
 #endif
       {
+#ifndef NO_TD_CLOCK
 	clock_t new_clock;
 	new_clock=clock();
 	td_clock+=new_clock-last_clock;
 	last_clock=new_clock;
+#endif
       }
 #if TDS_MPQS == TDS_BIGSS
 #error "MPQS at BIGSS not yet for serial siever"
@@ -2067,10 +2229,12 @@ static u32_t j_offset;
 #endif
 #if TDS_MPQS == TDS_ODDNESS_CLASS || TDS_PRIMALITY_TEST == TDS_ODDNESS_CLASS
     {
+#ifndef NO_TD_CLOCK
       clock_t new_clock;
       new_clock=clock();
       td_clock+=new_clock-last_clock;
       last_clock=new_clock;
+#endif
     }
 #endif
   }
@@ -2083,10 +2247,12 @@ static u32_t j_offset;
 #endif
 #if TDS_MPQS == TDS_SPECIAL_Q || TDS_PRIMALITY_TEST == TDS_SPECIAL_Q
   {
+#ifndef NO_TD_CLOCK
     clock_t new_clock;
     new_clock=clock();
     td_clock+=new_clock-last_clock;
     last_clock=new_clock;
+#endif
   }
 #endif
 }
@@ -2125,9 +2291,11 @@ more complicated tasks for the larger primes start.
   @<Preparation job for the small FB primes@>@;
   @<Preparation job for the medium and large FB primes@>@;
   @<Preparations at the Archimedean primes@>@;
+#ifndef NO_TD_CLOCK
   new_clock=clock();
   sch_clock+=new_clock-last_clock;
   last_clock=new_clock;
+#endif
 }
 
 @
@@ -2237,9 +2405,11 @@ static i32_t n_srb_i,n_srb_j;
     }
   }
 #ifdef GATHER_STAT
+#ifndef NO_TD_CLOCK
   new_clock=clock();
   Schedule_clock+=new_clock-last_clock;
   last_clock=new_clock;
+#endif
 #endif
 }
 #else /* NOSCHED */
@@ -2284,6 +2454,13 @@ void do_scheduling(struct schedule_struct *sched,u32_t ns,u32_t ot,u32_t s)
   if(sched->schedule[ll+1][k]>=sched->schedule[0][k]+sched->alloc) {
     if(k==0 && sched->schedule[ll+1][k]<sched->schedule[0][k]+sched->alloc1)
       continue;
+// SMJS Added from r351
+// SMJS Added this one so I can see sched pathologies
+/* report SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430 */
+// SMJS    fprintf(stderr,"\rSCHED_PATHOLOGY q0=%u k=%d excess=%d\n",
+    fprintf(stderr,"\rSCHED_PATHOLOGY q0=%u k=%d excess="UL_FMTSTR"\n",
+            (unsigned int)special_q, k, 
+            sched->schedule[ll+1][k]-(sched->schedule[0][k]+sched->alloc));
     longjmp(termination_jb,SCHED_PATHOLOGY);
   }
 }
@@ -2582,7 +2759,7 @@ and are calculated at the beginning of each of the three subsieves.
       }
     }
     while(k<5) smallsieve_auxbound[s][5-(k++)]=x;
-    for(x=(xx=smallsieve_aux1[s]);x<smallsieve_aux1_ub_odd[s];x+=6) {
+    for(x=(xx=smallsieve_aux1[s]); x<smallsieve_aux1_ub_odd[s]; x+=6) {
       if(x[0]<TINY_SIEVE_MIN) {
         if(x!=xx) {
           memcpy(copy_buf,x,6*sizeof(*x));
@@ -3267,10 +3444,31 @@ infinity.
     p=x[0];
     l=x[1];
     d=x[2];
+// SMJS r384 patch (initial work in r367 patch and subsequently modified several time
+#if I_bits==L1_BITS
+                // j_per_strip = 2 here, and p is rarely 0 (which is a bug)
+                    if(d<2) horizontal_sievesums[d]+= l;
+                    if(p==0) x[0]=USHRT_MAX-1; // otherwise will crash in trial_divide()
+                    else if((d+=p)<2) horizontal_sievesums[d]+= l;
+#else
+#if I_bits<L1_BITS
+                    while(d<j_per_strip) {
+                      horizontal_sievesums[d]+= l;
+                      d+= p;
+                    }
+#else
+                // j_per_strip = 1 here, and p is rarely 0 (which is a bug)
+                    if(d==0)
+                      *horizontal_sievesums += l;
+#endif
+#endif
+
+/* SMJS Replaced
     while(d<j_per_strip) {
       horizontal_sievesums[d]+=l;
       d+=p;
     }
+*/
 #if 0
     x[2]=d-j_per_strip;
 #endif
@@ -3384,9 +3582,11 @@ u16_t **schedbuf;
     }
   }
 #ifdef GATHER_STAT
+#ifndef NO_TD_CLOCK
   new_clock=clock();
   Schedule_clock+=new_clock-last_clock;
   last_clock=new_clock;
+#endif
 #endif
 
   for(j=0;j<n_schedules[s];j++) {
@@ -3638,8 +3838,10 @@ trial_divide()
         if(ncand==0)
           nzss[1]++;
 #endif
+#ifndef NO_TD_CLOCK
   last_tdclock=clock();
   tdi_clock+=last_tdclock-last_clock;
+#endif
   ncand=nc1;
   qsort(cand,ncand,sizeof(*cand),tdcand_cmp);
   td_buf1[0]=td_buf[first_td_side];
@@ -3770,9 +3972,11 @@ array |tds_fbi[sieve_interval[i]]|.
 #endif
 
   @<tds init@>@;
+#ifndef NO_TD_CLOCK
   newclock=clock();
   tdsi_clock[side]+=newclock-last_tdclock;
   last_tdclock=newclock;
+#endif
   @<td sieve@>@;
   last_j=0;
   for(ci=0,nc1=0;ci<ncand;ci++) {
@@ -3831,14 +4035,21 @@ array |tds_fbi[sieve_interval[i]]|.
   u16_t *x,j_step;
   j_step=j_per_strip-last_j;
   for(x=smallpsieve_aux[side];x<smallpsieve_aux_ub[side];x+=3) {
+// SMJS r367 patch
+/* Was
     modulo32=x[0];
     x[2]=modsub32(x[2],(j_step)%modulo32);
+*/
+    if ((modulo32=x[0]))
+      x[2]=modsub32(x[2],(j_step)%modulo32);
   }
 }  
 #endif
+#ifndef NO_TD_CLOCK
   newclock=clock();
   tds4_clock[side]+=newclock-last_tdclock;
   last_tdclock=newclock;
+#endif
   ncand=nc1;
 }
 
@@ -3973,9 +4184,11 @@ memcpy(tds_fbi_curpos,tds_fbi,UCHAR_MAX*sizeof(*tds_fbi));
   }
 }
 #endif
+#ifndef NO_TD_CLOCK
 newclock=clock();
 tds2_clock[side]+=newclock-last_tdclock;
 last_tdclock=newclock;
+#endif
 
 @ Next, store the factor base indices |>=fbi1[side]|.
 @<td sieve@>=
@@ -4078,9 +4291,11 @@ last_tdclock=newclock;
 #endif
   }
 }
+#ifndef NO_TD_CLOCK
 newclock=clock();
 tds3_clock[side]+=newclock-last_tdclock;
 last_tdclock=newclock;
+#endif
 
 @
 @<Global decl...@>=
@@ -4291,9 +4506,11 @@ factor base elements they point to:
     x[3]=r;
   }
 #endif
+#ifndef NO_TD_CLOCK
   newclock=clock();
   tds1_clock[side]+=newclock-last_tdclock;
   last_tdclock=newclock;
+#endif
 }
 
 @ Advance the location of roots which we use for trial division. But
@@ -4668,7 +4885,8 @@ primality_tests()
     s1=s^first_psp_side;
     if(!need_test[s1]) continue;
     n_psp++;
-    if(psp(large_factors[s1],1)==1) return 0;
+    // SMJS psp only has one arg if(psp(large_factors[s1],1)==1) return 0;
+    if(psp(large_factors[s1])==1) return 0;
     mpz_neg(large_factors[s1],large_factors[s1]);
   }
   return 1;
@@ -4788,6 +5006,22 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
     else
       nf=mpqs_factor(large_factors[s1],max_primebits[s1],&mf);
     if(nf<0) {
+// SMJS Added from  r370 (may need work because above code changed a bit)
+      /* did it fail on a square? */
+      mpz_sqrtrem(large_primes[s1][0],large_primes[s1][1],large_factors[s1]);
+      if(mpz_sgn(large_primes[s1][1]) == 0) { /* remainder == 0? */
+        mpz_set(large_primes[s1][1],large_primes[s1][0]);
+        nlp[s1]= 2;
+#if 0 /* this is now tested well enough, no need for a message */
+        if(verbose > 1) {
+          fprintf(stderr," mpqs on a prime square ");
+          mpz_out_str(stderr,10,large_primes[s1][0]);
+          fprintf(stderr,"^2  ");
+        }
+#endif
+        continue;
+      }
+
       fprintf(stderr,"mpqs failed for ");
       mpz_out_str(stderr,10,large_factors[s1]);
       fprintf(stderr,"(a,b): ");
@@ -4813,29 +5047,29 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
 
   yield++;
 
-  mpz_out_str(ofile, 10, sr_a);
-  fprintf(ofile, ",");
-  mpz_out_str(ofile, 10, sr_b);
+  mpz_out_str(g_ofile, 10, sr_a);
+  fprintf(g_ofile, ",");
+  mpz_out_str(g_ofile, 10, sr_b);
   
 #define OBASE 16
   for(s= 0;s<2;s++) {
     int num = 0;
     u32_t *x = fbp_buffers_ub[1-s];
 
-    fprintf(ofile, ":");
+    fprintf(g_ofile, ":");
     while (num < nlp[1-s]) {
-      if (num>0) fprintf(ofile, ",");
-      mpz_out_str(ofile, OBASE, large_primes[1-s][num]);
+      if (num>0) fprintf(g_ofile, ",");
+      mpz_out_str(g_ofile, OBASE, large_primes[1-s][num]);
       num++;
     }
     while (x-- != fbp_buffers[1-s]) {
       if ((unsigned int)*x <1000) continue;
-      if (num>0) fprintf(ofile, ",");
-      fprintf(ofile, "%x", (unsigned int)*x);
+      if (num>0) fprintf(g_ofile, ",");
+      fprintf(g_ofile, "%x", (unsigned int)*x);
       num++;
     }
   }
-  fprintf(ofile, "\n");
+  fprintf(g_ofile, "\n");
 }
 
 // Old CWI output
@@ -4859,47 +5093,47 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
       continue;
     }
 #ifdef OFMT_CWI_REVERSE
-    fprintf(ofile,"01%c%c ",nlp_char[1],nlp_char[0]);
+    fprintf(g_ofile,"01%c%c ",nlp_char[1],nlp_char[0]);
 #else
-    fprintf(ofile,"01%c%c ",nlp_char[0],nlp_char[1]);
+    fprintf(g_ofile,"01%c%c ",nlp_char[0],nlp_char[1]);
 #endif
   }
 #else
-  fprintf(ofile,"W ");
+  fprintf(g_ofile,"W ");
 #define OBASE 16
 #endif
-  mpz_out_str(ofile,OBASE,sr_a);
-  fprintf(ofile," ");
-  mpz_out_str(ofile,OBASE,sr_b);
+  mpz_out_str(g_ofile,OBASE,sr_a);
+  fprintf(g_ofile," ");
+  mpz_out_str(g_ofile,OBASE,sr_b);
 
 
 #ifndef OFMT_CWI_REVERSE
   for(s=0;s<2;s++) {
     u32_t i,*x;
 #ifndef OFMT_CWI
-    fprintf(ofile,"\n%c",'X'+s);
+    fprintf(g_ofile,"\n%c",'X'+s);
 #endif
     if (s==special_q_side) {
       if (special_q>>32)
 #ifndef OFMT_CWI
-        fprintf(ofile," %llX",special_q);
+        fprintf(g_ofile," %llX",special_q);
 #else
 */
 /* CAVE: not tested */
 /*
-        if (special_q>CWI_LPB) fprintf(ofile," %llu",special_q);
+        if (special_q>CWI_LPB) fprintf(g_ofile," %llu",special_q);
 #endif
     }
     for(i=0;i<nlp[s];i++) {
-      fprintf(ofile," ");
-      mpz_out_str(ofile,OBASE,large_primes[s][i]);
+      fprintf(g_ofile," ");
+      mpz_out_str(g_ofile,OBASE,large_primes[s][i]);
     }
     for(x=fbp_buffers[s];x<fbp_buffers_ub[s];x++) {
 #ifndef OFMT_CWI
-      fprintf(ofile," %X",*x);
+      fprintf(g_ofile," %X",*x);
 #else
       if(*x>CWI_LPB)
-        fprintf(ofile," %d",*x);
+        fprintf(g_ofile," %d",*x);
 #endif
     }
   }
@@ -4907,23 +5141,23 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
   for(s=0;s<2;s++) {
     u32_t i,*x;
     for(i=0;i<nlp[1-s];i++) {
-      fprintf(ofile," ");
-      mpz_out_str(ofile,OBASE,large_primes[1-s][i]);
+      fprintf(g_ofile," ");
+      mpz_out_str(g_ofile,OBASE,large_primes[1-s][i]);
     }
     for(x=fbp_buffers[1-s];x<fbp_buffers_ub[1-s];x++) {
       if(*x>CWI_LPB)
-        fprintf(ofile," %d",*x);
+        fprintf(g_ofile," %d",*x);
     }
     if (1-s==special_q_side) {
       if (special_q>>32)
-        if (special_q>CWI_LPB) fprintf(ofile," %llu",special_q);
+        if (special_q>CWI_LPB) fprintf(g_ofile," %llu",special_q);
     }
   }
 #endif
 #ifndef OFMT_CWI
-  fprintf(ofile,"\n");
+  fprintf(g_ofile,"\n");
 #else
-  fprintf(ofile,";\n");
+  fprintf(g_ofile,";\n");
 #endif
 }
 */
@@ -4971,23 +5205,23 @@ void dumpsieve(u32_t j_offset,u32_t side);
 void
 dumpsieve(u32_t j_offset,u32_t side)
 {
-  FILE *ofile;
+  FILE *g_ofile;
   char *ofn;
   asprintf(&ofn,"sdump4e.ot%u.j%u.s%u",oddness_type,j_offset,side);
-  if((ofile=fopen(ofn,"w"))==NULL) {
+  if((g_ofile=fopen(ofn,"wb"))==NULL) {
       free(ofn);
       return;
   }
-  fwrite(sieve_interval,1,L1_SIZE,ofile);
-  fclose(ofile);
+  fwrite(sieve_interval,1,L1_SIZE,g_ofile);
+  fclose(g_ofile);
   free(ofn);
   asprintf(&ofn,"hzsdump4e.ot%u.j%u.s%u",oddness_type,j_offset,side);
-  if((ofile=fopen(ofn,"w"))==NULL) {
+  if((g_ofile=fopen(ofn,"wb"))==NULL) {
       free(ofn);
       return;
   }
-  fwrite(horizontal_sievesums,1,j_per_strip,ofile);
-  fclose(ofile);
+  fwrite(horizontal_sievesums,1,j_per_strip,g_ofile);
+  fclose(g_ofile);
   free(ofn);
 }
 

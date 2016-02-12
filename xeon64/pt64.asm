@@ -10,8 +10,9 @@ define(expon,%r9)dnl
 define(b,%r10)dnl
 define(t,%r11)dnl
 
+#include "underscore.h"
+
 	.align 8
-	.type modsq64,@function
 modsq64:
 	movq t,%rax
 	mulq t
@@ -30,11 +31,22 @@ dnl Calculate one
 	xorq %rax,%rax
 	divq %rdi
 	movq N,auxreg
-	movq N,expon
+dnl smjs messing around with order so can use expon register
+dnl smjs	movq N,expon
+dnl smjs	andq $255,auxreg
+dnl smjs	subq $1,expon
+dnl smjs	shrq $1,auxreg
+
 	andq $255,auxreg
-	subq $1,expon
 	shrq $1,auxreg
-	movzbq mpqs_256_inv_table(auxreg),mm64_aux
+
+dnl use rip addressing to access inv table
+dnl smjs	movzbq mpqs_256_inv_table(auxreg),mm64_aux
+        leaq mpqs_256_inv_table(%rip),mm64_aux
+	movzbq (mm64_aux,auxreg),mm64_aux
+
+	movq N,expon
+	subq $1,expon
 	movq %rdx,one
 
 dnl	movq %rdx,%rax

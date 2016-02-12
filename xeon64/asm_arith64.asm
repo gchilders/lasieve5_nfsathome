@@ -21,6 +21,9 @@ dnl asm_mulm64(): prod=f1*f2 mod N
 dnl function_head(asm_sqm64)
 dnl asm_inv64(res,b)
 dnl
+
+#include "underscore.h"
+
 .comm montgomery_modulo_n,8
 .comm montgomery_inv_n,8
 dnl
@@ -41,7 +44,9 @@ function_head(asm_copy64)
 dnl asm_sub64_3(c,a,b): c=a-b mod N
 function_head(asm_sub64_3)
 	movq (op1),%rax
-	movq montgomery_modulo_n,%r9
+dnl smjs	movq montgomery_modulo_n,%r9
+	movq montgomery_modulo_n(%rip),%r9
+
 	xorq %r8,%r8
 	subq (op2),%rax
 	cmovcq (%r9),%r8
@@ -51,7 +56,9 @@ function_head(asm_sub64_3)
 dnl asm_half64(a): a/=2 mod N
 function_head(asm_half64)
 	movq (rop),%rax
+dnl smjs	movq montgomery_modulo_n(%rip),%r8
 	movq montgomery_modulo_n(%rip),%r8
+
 	movq $0,%r10
 	testq $1,%rax
 	movq (%r8),%r9
@@ -69,7 +76,9 @@ function_head(asm_sub_n64)
 dnl asm_add64(b,a): b+=a mod N
 function_head(asm_add64)
 	movq (rop),%rax
-	movq montgomery_modulo_n,%r10
+dnl smjs	movq montgomery_modulo_n,%r10
+	movq montgomery_modulo_n(%rip),%r10
+
 	xorq %r8,%r8
 	movq (%r10),%r9
 	subq %r9,%rax
@@ -102,7 +111,7 @@ undefine(`op')dnl
 undefine(`op1')dnl
 undefine(`op2')dnl
 
-.IF 0
+.if 0
 dnl static void ecm_duplicate(ulong *x1, ulong *z1)
 dnl {
 dnl   asm_copy(mm_w,x1); asm_add2(mm_w,z1);
@@ -242,4 +251,4 @@ function_head(asm_duplicate)
 	popq %r12
 	popq %rbx
 	ret
-.ENDIF
+.endif

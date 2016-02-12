@@ -73,7 +73,8 @@ lasched2_afterexception:')
 	cmpl ijd,ij_ubd
 	movl ijd,aux0d
 	movl ijd,aux1d
-	prefetch 128(ri)
+dnl smjs	prefetch 128(ri)
+	prefetcht0 128(ri)
 	jbe lasched`'ot`'_ijloop_end
 lasched`'ot`'_ij_loop:
 	movl ijd,aux2d
@@ -100,7 +101,8 @@ ifelse(nt_sched,1,`
 	movl ijd,aux1d
 	ja lasched`'ot`'_ij_loop
 lasched`'ot`'_ijloop_end:
-	prefetchw 64(ij_ptr)
+dnl smjs	prefetchw 64(ij_ptr)
+	prefetcht0 64(ij_ptr)
 	subl ij_ubd,ijd
 	leaq 8(ri),ri
 	movl ijd,(ij_ptr)
@@ -182,7 +184,8 @@ lasched2_1_afterexception:')
 	cmpl ijd,ij_ubd
 	movl ijd,aux0d
 	movl ijd,aux1d
-	prefetch 128(ri)
+dnl smjs	prefetch 128(ri)
+	prefetcht0 128(ri)
 	jbe lasched`'ot`'_1_ijloop_end
 lasched`'ot`'_1_ij_loop:
 	movl ijd,aux2d
@@ -206,7 +209,8 @@ lasched`'ot`'_1_ij_loop:
 	movl ijd,aux1d
 	ja lasched`'ot`'_1_ij_loop
 lasched`'ot`'_1_ijloop_end:
-	prefetchw 64(ij_ptr)
+dnl smjs	prefetchw 64(ij_ptr)
+	prefetcht0 64(ij_ptr)
 	subl ij_ubd,ijd
 	leaq 8(ri),ri
 	movl ijd,(ij_ptr)

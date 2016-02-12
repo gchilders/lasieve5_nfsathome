@@ -13,13 +13,15 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 void adjust_mpz_bufsize(mpz_t **x,size_t *alloc_ptr,size_t size,size_t increment);
 int string2mpz(mpz_t rop,char *x,int base);
 #if __GNU_MP_VERSION < 3 || (__GNU_MP_VERSION == 3 && __GNU_MP_VERSION_MINOR == 0)
-#define NEED_MPZ_MUL_SI
-void mpz_mul_si(mpz_t x,mpz_t y,long int z);
+// SMJS #error NEED_MPZ_MUL_SI
+// SMJS
+//#define NEED_MPZ_MUL_SI
+//void mpz_mul_si(mpz_t x,mpz_t y,long int z);
 #endif
 
 #define mpz_add_si(r,o,s) \
   ({ int _s; _s=(s); \
-     _s>=0 ? mpz_add_ui(r,o,(ulong)(_s)) : mpz_sub_ui(r,o,(ulong)(-_s)); })
+     _s>=0 ? mpz_add_ui(r,o,(mp_limb_t)(_s)) : mpz_sub_ui(r,o,(mp_limb_t)(-_s)); })
 
 void mpz_set_ull(mpz_t targ,ullong src);
 ullong mpz_get_ull(mpz_t src);
@@ -46,6 +48,7 @@ void mpz_set_ull(mpz_t,unsigned long long);
 #endif
 @
 @c
+#include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
 #include <gmp.h>
@@ -54,6 +57,8 @@ void mpz_set_ull(mpz_t,unsigned long long);
 #include "if.h"
 #include "gmp-aux.h"
 
+/* SMJS Commented out because doesn't seem to be used and complains about 
+   pointer types - I don't want to think about how to fix it if its not used
 void
 adjust_mpz_bufsize(mpz_t **x,size_t *alloc_ptr,size_t size,size_t increment)
 {
@@ -63,6 +68,7 @@ adjust_mpz_bufsize(mpz_t **x,size_t *alloc_ptr,size_t size,size_t increment)
   adjust_bufsize(x,alloc_ptr,size,increment,sizeof(**x));
   while(old_alloc<*alloc_ptr) mpz_init((*x)[old_alloc++]);
 }
+*/
 
 @ In some versions of gmp, |mpz_set_str(x,"0\n",10)| sets |x| to
 a value different from zero. Also, a leading '+' may not be recognised.

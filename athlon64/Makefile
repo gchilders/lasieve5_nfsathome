@@ -7,12 +7,32 @@
 # Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 
-CFLAGS= -O3
-#CFLAGS= -g
+
+#gcc on osx
+CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+#CFLAGS= -m64 -Ofast -march=native -I/usr/local/Cellar/gmp4/4.3.2/include -Wa,-q
+
+#windows
+#CFLAGS= -Wall  -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable  -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -I. -Ic:/users/steve/progs/local/include
+#CFLAGS= -Wimplicit-function-declaration -m64 -Ofast -march=native -Ic:/users/steve/progs/local/include
+
+#clang
+#CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
+#CFLAGS= -m64 -Ofast -march=corei7 -I/Users/searle/progs/ensc-dependencies/include 
+#clang for profiling
+#CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
+
+#linux
+#CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
+
 include ../paths
 
 CC=gcc $(CFLAGS)
+#CC=gcc-4.9 $(CFLAGS)
+#CC=clang $(CFLAGS)
+
 CTANGLE=ctangle
+#CTANGLE='c:/progra~2/cweb/bin/ctangle'
 
 SRCFILES=gcd32.c 32bit.h modinv32.c psp.c Makefile \
 	64bit.h asm_64bit.asm \
@@ -56,15 +76,20 @@ SRCFILES=gcd32.c 32bit.h modinv32.c psp.c Makefile \
 %.dvi: %.tex
 	tex $<
 
-%.s: %.asm
+%.S: %.asm
 	m4 -g  -Dn_i_bits=0 ls-defs.asm $^ > $@
+
+%.o: %.S
+        $(CC) -c $^
 
 %.o: %.s
 	$(CC) -c $^
 
-.SECONDARY:  *.s
+.SECONDARY:  *.s *.S
 
 .PHONY: bup
+
+all: liblasieve.a liblasieveI11.a liblasieveI12.a liblasieveI13.a liblasieveI14.a liblasieveI14.a liblasieveI15.a liblasieveI16.a
 
 ../gmp-aux.h:
 	$(CTANGLE) ../gmp-aux.w
@@ -156,3 +181,6 @@ liblasieveI%.a:	laschedI%.o lasched0I%.o lasched1I%.o lasched2I%.o \
 
 bup:
 	echo $(SRCFILES)
+
+clean:
+	rm *.o *.a

@@ -128,6 +128,7 @@ static u32_t modinv32_eucl(u32_t x)
   return a;
 }
 
+#undef modinv32
 u32_t modinv32(u32_t x)
 {
   /*===========================================================\

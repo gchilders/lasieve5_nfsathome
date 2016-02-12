@@ -8,16 +8,16 @@
 # 02111-1307, USA.
 
 
-#  asm_re_strip(rowptr,m,dptr,ucmptr):
-#
-#  tab[0]=0ULL;
-#  for (j=0,zz=1; j<4; j++,zz+=zz) {
-#    if (dptr[j]==-1) tab[zz]=0ULL;
-#    else tab[zz]=rowptr[dptr[j]];
-#    for (k=1; k<zz; k++) tab[zz+k]=tab[k]^tab[zz];
-#  }
-#  for (t=0; t<m; t++)
-#    rowptr[t]^=tab[ucmptr[t]];
+# //  asm_re_strip(rowptr,m,dptr,ucmptr):
+# //
+# //  tab[0]=0ULL;
+# //  for (j=0,zz=1; j<4; j++,zz+=zz) {
+# //    if (dptr[j]==-1) tab[zz]=0ULL;
+# //    else tab[zz]=rowptr[dptr[j]];
+# //    for (k=1; k<zz; k++) tab[zz+k]=tab[k]^tab[zz];
+# //  }
+# //  for (t=0; t<m; t++)
+# //    rowptr[t]^=tab[ucmptr[t]];
 
 define(`tab',%r8)dnl
 define(`rowptr',%rdi)dnl

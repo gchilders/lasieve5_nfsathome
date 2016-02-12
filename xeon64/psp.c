@@ -15,6 +15,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 u64_t pt64(u64_t);
 
+#include "../if.h"
 #include "montgomery_mul.h"
 
 extern ulong *montgomery_modulo_n;

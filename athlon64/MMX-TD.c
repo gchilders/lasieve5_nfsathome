@@ -33,16 +33,22 @@ static int jps=0;
 /* Read-Ahead safety. */
 #define RAS MMX_REGW
 
+#ifdef _WIN64
+#define memalign(x, y)  _aligned_malloc(y, x)
+#endif
+
 static u16_t *
 mmx_xmalloc(size_t n)
 {
   u16_t *r;
+#ifndef _WIN64
   r=(u16_t *)malloc(n*sizeof(u16_t));
   if(r==NULL)
     complain("mmx_malloc(%llu) failed: %m\n",(u64_t)n);
-  if (((int)r)&(MMX_REGW*sizeof(u16_t)-1))
+  //SMJSif (((int)r)&(MMX_REGW*sizeof(u16_t)-1))
+  if (((ulong)r)&(MMX_REGW*sizeof(u16_t)-1))
     complain("mmx_malloc: memalign failed\n");
-#if 0
+#else
   r=(u16_t*)memalign(MMX_REGW*sizeof(u16_t),n*sizeof(u16_t));
   if(r==NULL)
     complain("mmx_malloc(%Lu) failed: %m\n",(u64_t)n);
@@ -124,6 +130,9 @@ MMX_TdInit(int side,u16_t *x,u16_t *x_ub,u32_t *pbound_ptr,
   return y;
 }
 
+u32_t* ASM_ATTR asm_TdUpdate4(u16_t*,u16_t*,u16_t*);
+u32_t* ASM_ATTR asm_TdUpdate8(u16_t*,u16_t*,u16_t*);
+
 void
 MMX_TdUpdate(int side,int j_step)
 {
@@ -149,8 +158,8 @@ MMX_TdUpdate(int side,int j_step)
 #endif
 }
 
-u32_t *asm_MMX_Td4(u32_t*,u32_t,u16_t*,u16_t*);
-u32_t *asm_MMX_Td8(u32_t*,u32_t,u16_t*,u16_t*);
+u32_t * ASM_ATTR asm_MMX_Td4(u32_t*,u32_t,u16_t*,u16_t*);
+u32_t * ASM_ATTR asm_MMX_Td8(u32_t*,u32_t,u16_t*,u16_t*);
 
 #ifdef MMX_TDBENCH
 u64_t MMX_TdNloop=0;

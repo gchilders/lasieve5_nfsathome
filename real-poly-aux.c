@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "asm/siever-config.h"
 #include "if.h"
@@ -91,7 +92,7 @@ static u32_t rpol_eval_last_y=U32_MAX;
 static double rpol_eval_ayn[10];
 
 void
-rpol_eval_clear()
+rpol_eval_clear(void)
 {
   rpol_eval_last_y=U32_MAX;
 }

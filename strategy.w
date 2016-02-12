@@ -49,6 +49,9 @@ void print_strategy_stat();
 #include "ecm.h"
 #include "pm1.h"
 
+#include "mpqs.h"
+#include "mpqs3.h"
+
 extern char *input_line;
 extern size_t input_line_alloc;
 
@@ -500,7 +503,8 @@ avoiding a second p-1 test, otherwise an ad hoc strategy is used.
 /* psp tests */
     for (es=0; es<2; es++)
       if (need_test[es])
-        if (psp(ecm_f[es],1)==1) return 1;
+// SMJS psp only has one arg        if (psp(ecm_f[es],1)==1) return 1;
+        if (psp(ecm_f[es])==1) return 1;
 /* p-1, ecm and mpqs */
     order[0]=0; order[1]=1;
 /* if first number is bigger change order of factorisation */
@@ -595,7 +599,8 @@ nfecm++; if (nf>0) nsecm++;
           if (mpz_sizeinbase(ecm_f[es],2)<=max_primebits[s]) {
             mpz_set(large_primes[s][nlp[s]],ecm_f[es]); nlp[s]++;
             break;
-          } else if (psp(ecm_f[es],1)==1) {
+// SMJS psp only has one arg          } else if (psp(ecm_f[es],1)==1) {
+          } else if (psp(ecm_f[es])==1) {
             mpqsaux_clock+=clock()-cl; return 1;
           }
           if (ecm_reset_n(e[s],ecm_f[es])) {
@@ -604,7 +609,8 @@ nfecm++; if (nf>0) nsecm++;
           }
           continue;
         }
-        if (psp(fac[0],1)==1) { mpqsaux_clock+=clock()-cl; return 1; }
+        // SMJS psp only has one arg if (psp(fac[0],1)==1) { mpqsaux_clock+=clock()-cl; return 1; }
+        if (psp(fac[0])==1) { mpqsaux_clock+=clock()-cl; return 1; }
         continue;
       }
     }

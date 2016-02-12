@@ -6,6 +6,9 @@ dnl You should have received a copy of the GNU General Public License along
 dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
+
+#include "underscore.h" 
+
 define(FB,%rcx)dnl current entry of mpqs_FB
 define(FBs,%r8)dnl current entry of mps_FB_start
 define(FBl,%r9)dnl current entry of mpqs_FB_log
@@ -25,24 +28,34 @@ function_head(asm3_sieve)
 	pushq %r13
 	pushq %r14
 	pushq %r15
+dnl smjs	movzwq mpqs3_sievebegin(%rip),%rax
+dnl smjs	movzwq mpqs3_sievelen(%rip),sl4
 	movzwq mpqs3_sievebegin(%rip),%rax
 	movzwq mpqs3_sievelen(%rip),sl4
-	movq $mpqs3_FB,FB
-	movq $mpqs3_FB_start,FBs
-	movq $mpqs3_FB_log,FBl
+
+dnl smjs	movq $mpqs3_FB,FB
+dnl smjs	movq $mpqs3_FB_start,FBs
+dnl smjs	movq $mpqs3_FB_log,FBl
+	leaq mpqs3_FB(%rip),FB
+	leaq mpqs3_FB_start(%rip),FBs
+	leaq mpqs3_FB_log(%rip),FBl
+
+
 	leaq (FB,%rax,4),FB
         leaq (FBs,%rax,4),FBs
 	leaq (FBl,%rax),FBl
 	movq sl4,sl
 	shrq $3,sl4
+dnl smjs	movq mpqs3_sievearray(%rip),sieve_interval
 	movq mpqs3_sievearray(%rip),sieve_interval
+
 	movq sieve_interval,sieveend
 	addq sl,sieveend
 
-.IF 0
+.if 0
  movq $40,%rdi
  call zeitA
-.ENDIF
+.endif
 
 .align 16
 mainloop:
@@ -88,13 +101,13 @@ loop4:
 
 
 loop7begin:
-.IF 0
+.if 0
  movq $40,%rdi
  call zeitB
 
  movq $41,%rdi
  call zeitA
-.ENDIF
+.endif
 	movq sl,%rax
 	xorq %rdx,%rdx  # prime2 is not used at the moment
 	movq $7,sl4
@@ -273,13 +286,13 @@ mainloop4:
 
 
 loop3begin:
-.IF 0
+.if 0
  movq $41,%rdi
  call zeitB
 
  movq $42,%rdi
  call zeitA
-.ENDIF
+.endif
 
 	movq sl,%rax
 	xorq %rdx,%rdx  # prime2 is not used at the moment
@@ -317,13 +330,13 @@ mainloop3:
 	jmp mainloop3
 
 loop2begin:
-.IF 0
+.if 0
  movq $42,%rdi
  call zeitB
 
  movq $43,%rdi
  call zeitA
-.ENDIF
+.endif
 
 	movq sl,sl4
 	shrq $1,sl4
@@ -355,13 +368,13 @@ mainloop2:
 	jmp mainloop2
 
 loop1begin:
-.IF 0
+.if 0
  movq $43,%rdi
  call zeitB
 
  movq $44,%rdi
  call zeitA
-.ENDIF
+.endif
 
 	movq sl,sl4
 	subq $1,sl4
@@ -389,10 +402,10 @@ mainloop1:
 
 	jmp mainloop1
 end:
-.IF 0
+.if 0
  movq $44,%rdi
  call zeitB
-.ENDIF
+.endif
 	popq %r15
 	popq %r14
 	popq %r13
@@ -400,7 +413,7 @@ end:
 	popq %rbx
 	ret
 
-.IF 1
+.if 1
 undefine(`FB')dnl
 undefine(`FBs')dnl
 undefine(`FBl')dnl
@@ -432,19 +445,28 @@ function_head(asm3_sievea)
 	pushq %r13
 	pushq %r14
 	pushq %r15
+dnl smjs	movzwq mpqs3_sievebegin(%rip),%rax
+dnl smjs	movzwq mpqs3_sievelen(%rip),sl
 	movzwq mpqs3_sievebegin(%rip),%rax
 	movzwq mpqs3_sievelen(%rip),sl
-	movq $mpqs3_FB0,FB0
-	movq $mpqs3_FB_start,FBs
+
+dnl smjs	movq $mpqs3_FB0,FB0
+dnl smjs	movq $mpqs3_FB_start,FBs
+	leaq mpqs3_FB0(%rip),FB0
+	leaq mpqs3_FB_start(%rip),FBs
+
         leaq (FBs,%rax,4),FBs
+
+dnl smjs	movq mpqs3_sievearray(%rip),sieve_interval
 	movq mpqs3_sievearray(%rip),sieve_interval
+
 	movq sieve_interval,sieveend
 	addq sl,sieveend
 
-.IF 0
+.if 0
  movq $21,%rdi
  call zeitA
-.ENDIF
+.endif
 
 .align 16
 mainloop8a:
@@ -523,7 +545,7 @@ update8a:
 loop4begina:
 	leaq 2(FB0),FB0
 
-.IF 0
+.if 0
  movq %rax,sloc1
  movq $21,%rdi
  call zeitB
@@ -531,7 +553,7 @@ loop4begina:
  movq $22,%rdi
  call zeitA
  movq sloc1,%rax
-.ENDIF
+.endif
 
 mainloop4a:
 	movzwq (FB0),prime   # p
@@ -603,7 +625,7 @@ update4a:
 
 loop3begina:
 	leaq 2(FB0),FB0
-.IF 0
+.if 0
  movq sloc1,%rax
  movq $22,%rdi
  call zeitB
@@ -611,7 +633,7 @@ loop3begina:
  movq $23,%rdi
  call zeitA
  movq sloc1,%rax
-.ENDIF
+.endif
 mainloop3a:
 	movzwq (FB0),prime   # p
 	testq prime,prime
@@ -658,7 +680,7 @@ update3a:
 loop2begina:
 	leaq 2(FB0),FB0
 
-.IF 0
+.if 0
  movq sloc1,%rax
  movq $23,%rdi
  call zeitB
@@ -666,7 +688,7 @@ loop2begina:
  movq $24,%rdi
  call zeitA
  movq sloc1,%rax
-.ENDIF
+.endif
 
 mainloop2a:
 	movzwq (FB0),prime   # p
@@ -711,7 +733,7 @@ update2a:
 loop1begina:
 	leaq 2(FB0),FB0
 
-.IF 0
+.if 0
  movq sloc1,%rax
  movq $24,%rdi
  call zeitB
@@ -719,7 +741,7 @@ loop1begina:
  movq $25,%rdi
  call zeitA
  movq sloc1,%rax
-.ENDIF
+.endif
 
 mainloop1a:
 	movzwq (FB0),prime   # p
@@ -759,12 +781,12 @@ update1a:
 loop0begina:
 	leaq 2(FB0),FB0
 
-.IF 0
+.if 0
  movq sloc1,%rax
  movq $25,%rdi
  call zeitB
  movq sloc1,%rax
-.ENDIF
+.endif
 
 	popq %r15
 	popq %r14
@@ -772,5 +794,5 @@ loop0begina:
 	popq %r12
 	popq %rbx
 	ret
-.ENDIF
+.endif
 

@@ -7,6 +7,7 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
 
 define(len,%rcx)dnl
 define(disp_ptr,%r8)dnl
@@ -42,10 +43,17 @@ function_head(asm_next_pol11_xmm)
 	pslldq $8,%xmm7
 	movd %rax,%xmm6
 	paddw %xmm6,%xmm7    # 0x00010001000100010001000100010001
-	movq $mpqs_FB_disp,disp_ptr
-	movq $mpqs_FB_np_px,p_ptr
-	movq $mpqs_FB_mm_inv,inv_ptr
-	movq $mpqs_FB_start,start_ptr
+
+dnl smjs	movq $mpqs_FB_disp,disp_ptr
+dnl smjs	movq $mpqs_FB_np_px,p_ptr
+dnl smjs	movq $mpqs_FB_mm_inv,inv_ptr
+dnl smjs	movq $mpqs_FB_start,start_ptr
+
+	leaq mpqs_FB_disp(%rip),disp_ptr
+	leaq mpqs_FB_np_px(%rip),p_ptr
+	leaq mpqs_FB_mm_inv(%rip),inv_ptr
+	leaq mpqs_FB_start(%rip),start_ptr
+
 np11_mainloop:
 	movaps (p_ptr),%xmm0     # p
 	movaps 16(p_ptr),%xmm1    # sqrt
@@ -165,11 +173,14 @@ function_head(asm_next_pol10_xmm)
 	paddw %xmm5,%xmm1    # bimul
 
 	movq %rdi,len    # len
-	movq $mpqs_FB_np_px,p_ptr
-	movq $mpqs_FB_mm_inv,inv_ptr
-	movq $mpqs_FB_start,start_ptr
-	movq %rsi,invtabptr    # invptr
+dnl smjs	movq $mpqs_FB_np_px,p_ptr
+dnl smjs	movq $mpqs_FB_mm_inv,inv_ptr
+dnl smjs	movq $mpqs_FB_start,start_ptr
+	leaq mpqs_FB_np_px(%rip),p_ptr
+	leaq mpqs_FB_mm_inv(%rip),inv_ptr
+	leaq mpqs_FB_start(%rip),start_ptr
 
+	movq %rsi,invtabptr    # invptr
 np10_mainloop:
 	movaps (p_ptr),%xmm0     # p
 	movaps (inv_ptr),%xmm2     # mm_inv
@@ -237,8 +248,11 @@ undefine(`start_ptr')dnl
 
 dnl asm_next_pol3plus(len,*SI_add)
 function_head(asm_next_pol3plus)
-	movq $mpqs_FB_start,%rcx
-	movq $mpqs_FB_np_p,%rdx
+dnl smjs	movq $mpqs_FB_start,%rcx
+dnl smjs	movq $mpqs_FB_np_p,%rdx
+	leaq mpqs_FB_start(%rip),%rcx
+	leaq mpqs_FB_np_p(%rip),%rdx
+
 	movq $0x00010001,%rax
 	movd %rax,%mm7
 	psllq $32,%mm7
@@ -286,8 +300,11 @@ np3plus_mainloop:
 
 dnl asm_next_pol3plus_xmm(len,*SI_add)
 function_head(asm_next_pol3plus_xmm)
-	movq $mpqs_FB_start,%rcx
-	movq $mpqs_FB_np_px,%rdx
+dnl smjs	movq $mpqs_FB_start,%rcx
+dnl smjs	movq $mpqs_FB_np_px,%rdx
+	leaq mpqs_FB_start(%rip),%rcx
+	leaq mpqs_FB_np_px(%rip),%rdx
+
 	movq $0x00010001,%rax
 	movq %rax,%r9
 	shlq $32,%rax
@@ -339,8 +356,11 @@ np3plus_mainloopx:
 
 dnl asm_next_pol3minus(len,*SI_add)
 function_head(asm_next_pol3minus)
-	movq $mpqs_FB_start,%rcx
-	movq $mpqs_FB_np_p,%rdx
+dnl smjs	movq $mpqs_FB_start,%rcx
+dnl smjs	movq $mpqs_FB_np_p,%rdx
+	leaq mpqs_FB_start(%rip),%rcx
+	leaq mpqs_FB_np_p(%rip),%rdx
+
 	movq $0x00010001,%rax
 	movd %rax,%mm7
 	psllq $32,%mm7
@@ -390,8 +410,11 @@ np3minus_mainloop:
 
 dnl asm_next_pol3minus_xmm(len,*SI_add)
 function_head(asm_next_pol3minus_xmm)
-	movq $mpqs_FB_start,%rcx
-	movq $mpqs_FB_np_px,%rdx
+dnl smjs	movq $mpqs_FB_start,%rcx
+dnl smjs	movq $mpqs_FB_np_px,%rdx
+	leaq mpqs_FB_start(%rip),%rcx
+	leaq mpqs_FB_np_px(%rip),%rdx
+
 	movq $0x00010001,%rax
 	movq %rax,%r9
 	shlq $32,%rax

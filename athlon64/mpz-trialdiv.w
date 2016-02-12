@@ -3,13 +3,14 @@ Replace one \.{divl} instruction by two \.{mull} and a few other
 instructions.
 
 @c
+#include <string.h>
 #include <stdlib.h>
 #include <gmp.h>
 
 #include "siever-config.h"
 #include "../if.h"
 
-mp_limb_t mpz_asm_td(mp_limb_t,mp_limb_t,mp_limb_t*,mp_size_t);
+mp_limb_t ASM_ATTR mpz_asm_td(mp_limb_t,mp_limb_t,mp_limb_t*,mp_size_t);
 
 static mp_limb_t *lbuf,*mibuf;
 static size_t lbuf_alloc=0,mibuf_alloc=0;

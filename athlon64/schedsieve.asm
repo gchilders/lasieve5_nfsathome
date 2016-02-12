@@ -1,5 +1,5 @@
-	.globl schedsieve
-	.type schedsieve,@function
+dnl smjs	.globl schedsieve
+dnl smjs	.type schedsieve,@function
 /*
 Copyright (C) 2001 Jens Franke, T. Kleinjung.
 This file is part of gnfs4linux, distributed under the terms of the 
@@ -22,7 +22,8 @@ function_head(schedsieve)
         leaq 16(%rdx),%rdx
         jbe fat_loop_end
 fat_loop:
-        prefetch 128(%rdx)
+dnl smjs        prefetch 128(%rdx)
+        prefetcht0 128(%rdx)
         addb %al,(%rsi,%r8)
         movzwq (%rdx),%r8
         addb %al,(%rsi,%r9)

@@ -7,6 +7,7 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
 
 define(FB_src,%rdi)dnl
 define(proots_src,%rsi)dnl
@@ -94,7 +95,10 @@ dnl FB and proots are 4 byte arrays
 	jz sc`'i`'_64
 	shrq $1,aux0
 	andq $0x7f,aux0
-	movzbq mpqs_256_inv_table(aux0),inv
+dnl smjs	movzbq mpqs_256_inv_table(aux0),inv
+	leaq mpqs_256_inv_table(%rip),inv
+	movzbq (inv,aux0),inv
+
 	movq inv,aux0
 	mulq p
 	mulq inv
@@ -167,6 +171,7 @@ dnl y*2^-64 in aux3
 
 	movl x32,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 
 	mulq aux3
@@ -191,6 +196,8 @@ cri`'i`'_64:
 	movq ri_ptr,%rdi
 	movl p32,%esi
 	movl %eax,%edx
+
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 
 	leaq 4(FB),FB
@@ -218,6 +225,7 @@ sc`'i`'_64:
 	jz cri`'i`'_64
 	movl aux1d,%edi
 	movl p32,%esi
+dnl smjs        call asm_modinv32b
         call asm_modinv32b
 	movq aux0,aux2
 

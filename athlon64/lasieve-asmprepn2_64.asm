@@ -7,6 +7,8 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
+
 
 define(FB_src,%rdi)dnl
 define(proots_src,%rsi)dnl
@@ -102,7 +104,10 @@ dnl jmp badvalue`'i`'
 	jz badvalue`'i`'
 	shrq $1,aux0
 	andq $0x7f,aux0
-	movzbq mpqs_256_inv_table(aux0),inv
+dnl smjs	movzbq mpqs_256_inv_table(aux0),inv
+	leaq mpqs_256_inv_table(%rip),inv
+	movzbq (inv,aux0),inv
+
 	movq inv,aux0
 	mulq p
 	mulq inv
@@ -202,6 +207,7 @@ dnl save x in aux3 since r9 will be destroyed by asm_modinv32b
 dnl aux2 contains x*x0/2^64
 	movl aux2d,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 dnl 2^64/x/x0 in aux0
 	movq aux0,aux2
@@ -225,7 +231,7 @@ dnl 1/x0 in aux3, 2^64/x/x0 in aux2
 	cmovcq p,aux2
 	addq aux2,x
 
-.IF 0
+.if 0
 	movl x32,%edi
 	movl p32,%esi
 	call asm_modinv32b
@@ -236,7 +242,7 @@ dnl 1/x0 in aux3, 2^64/x/x0 in aux2
 	call asm_modinv32b
 	movq aux0,x0
 	movq aux3,x
-.ENDIF
+.endif
 dnl inverted values of x in x,x0
 
 dnl first root, y-calculation
@@ -323,11 +329,13 @@ dnl +-y/x in r
 	movq ri_ptr,%rdi
 	movl p32,%esi
 	movl x32,%edx
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 	leaq 8(ri_ptr),ri_ptr
 	movq ri_ptr,%rdi
 	movl p32,%esi
 	movl r32,%edx
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 proceed`'i`':
 	leaq 8(FB),FB
@@ -370,6 +378,7 @@ ifelse(eval((i)*(i-1)),0,`
 dnl x in aux1, invert it
 	movl aux1d,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 	movq aux0,aux3
 dnl i=0,2: p-r  i=1,3: r
@@ -399,6 +408,7 @@ cria`'i`':
 	movq ri_ptr,%rdi
 	movl p32,%esi
 	movl %eax,%edx
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 	leaq 8(ri_ptr),ri_ptr
 dnl
@@ -423,6 +433,7 @@ ifelse(eval((i)*(i-1)),0,`
 dnl x in aux1, invert it
 	movl aux1d,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 	movq aux0,aux3
 dnl i=0,2: p-r  i=1,3: r
@@ -452,6 +463,7 @@ crib`'i`':
 	movq ri_ptr,%rdi
 	movl p32,%esi
 	movl %eax,%edx
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 	jmp proceed`'i`'
 dnl
@@ -464,6 +476,7 @@ zeroa`'i`':
 	jz cria`'i`'
 	movl aux1d,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 	movq aux0,aux2
 	movq b1_src,aux0
@@ -491,6 +504,7 @@ zerob`'i`':
 	jz crib`'i`'
 	movl aux1d,%edi
 	movl p32,%esi
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 	movq aux0,aux2
 	movq b1_src,aux0

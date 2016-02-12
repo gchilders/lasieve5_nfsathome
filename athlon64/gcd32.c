@@ -8,27 +8,40 @@
   Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
   02111-1307, USA.
 */
-
 #include <sys/types.h>
+
 #include "siever-config.h"
-#include "32bit.h"
 
 u32_t gcd32(u32_t x, u32_t y)
 {
-  u32_t f;
+  u32_t r;
   if(!x) return y;
   if(!y) return x;
-  for(f=0;!(x&1) && !(y&1);x>>=1,y>>=1) f++;
-  for(;!(x&1);x>>=1);
-  for(;!(y&1);y>>=1);
-  while(x!=y) {
-    if(x<y) {
-      y-=x;
-      for(;!(y&1);y>>=1);
-    } else {
-      x-=y;
-      for(;!(x&1);x>>=1);
-    }
-  }
-  return x<<f;
+  __asm__ volatile ( "movl %%esi,%%eax\n"
+                     "bsfl %%esi,%%ecx\n"
+                     "bsfl %%edi,%%edx\n"
+                     "shrl %%cl,%%eax\n"
+                     "xchgl %%edx,%%ecx\n"
+                     "shrl %%cl,%%edi\n"
+                     "subl %%edx,%%ecx\n"
+                     "sbbl %%esi,%%esi\n"
+                     "andl %%ecx,%%esi\n"
+                     "addl %%esi,%%edx\n"
+                     "subl %%eax,%%edi\n"
+                     "jz 2f\n"
+                     "1:\n"
+                     "sbbl %%ecx,%%ecx\n"
+                     "movl %%ecx,%%esi\n"
+                     "andl %%edi,%%esi\n"
+                     "xorl %%ecx,%%edi\n"
+                     "addl %%esi,%%eax\n"
+                     "subl %%ecx,%%edi\n"
+                     "bsfl %%edi,%%ecx\n"
+                     "shrl %%cl,%%edi\n"
+                     "subl %%eax,%%edi\n"
+                     "jnz 1b\n"
+                     "2:\n"
+                     "movl %%edx,%%ecx\n"
+                     "shll %%cl,%%eax\n" : "=a"(r) : "S"(y), "D"(x) : "rcx", "rdx");
+  return r;
 }

@@ -7,6 +7,7 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
 
 define(FB_src,%rdi)dnl
 define(proots_src,%rsi)dnl
@@ -116,8 +117,14 @@ function_head(asm_lasieve_mm_setup`'i)
 	shrq $1,aux1
 	andq $0x7f,aux0
 	andq $0x7f,aux1
-	movzbq mpqs_256_inv_table(aux0),aux0
-	movzbq mpqs_256_inv_table(aux1),aux1
+dnl smjs use rip addressing
+dnl smjs Use q_reg temporarily
+dnl smjs	movzbq mpqs_256_inv_table(aux0),aux0
+dnl smjs	movzbq mpqs_256_inv_table(aux1),aux1
+	leaq mpqs_256_inv_table(%rip),q_reg
+	movzbq (q_reg,aux0),aux0
+	movzbq (q_reg,aux1),aux1
+
 	pxor invpq,invpq
 	pinsrw $0,aux0,invpq
 	pinsrw $4,aux1,invpq
@@ -229,6 +236,7 @@ Ycal	movdqa xmm_aux1,y
 	psrldq $8,x
 	movl p_regd,%esi
 Ycal	pmuludq invpq,xmm_aux1
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 
 	movd x,%edi
@@ -236,6 +244,7 @@ Ycal	pmuludq pq,xmm_aux1
 	movd %eax,xmm_aux0
 	movl q_regd,%esi
 Ycal	pxor y1,y1
+dnl smjs	call asm_modinv32b
 	call asm_modinv32b
 	movd %eax,x1
 Ycal	psubq xmm_aux1,y
@@ -298,8 +307,17 @@ dnl	Also, prepare call to get_recurrence_info
 	movq ri_ptr,%rdi
 	pmuludq invpq,xmm_aux0
 	pxor invpq,invpq
-	movzbq mpqs_256_inv_table(aux0),aux0
-	movzbq mpqs_256_inv_table(aux1),aux1
+
+dnl smjs use rip addressing
+dnl smjs Use q_reg temporarily
+dnl smjs	movzbq mpqs_256_inv_table(aux0),aux0
+dnl smjs	movzbq mpqs_256_inv_table(aux1),aux1
+	leaq mpqs_256_inv_table(%rip),q_reg
+	movzbq (q_reg,aux0),aux0
+	movzbq (q_reg,aux1),aux1
+dnl smjs put back 4(FB) into q_regd (now -4 as FB moved by 8)
+	movl -4(FB),q_regd
+
 	pmuludq pq,xmm_aux0
 	pinsrw $0,aux0,invpq
 	pinsrw $4,aux1,invpq
@@ -329,6 +347,7 @@ gri`'i:
 	psrldq $8,x
 nIcal	movdqa xmm_aux0,invpq
 nIcal	pmuludq x1,xmm_aux0
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 
 	movl q_regd,%esi
@@ -336,6 +355,7 @@ nIcal	pmuludq x1,xmm_aux0
 	movd x,%edx
 Ical	pmuludq invpq,xmm_aux0
 	movdqa x1,pq
+dnl smjs	call get_recurrence_info
 	call get_recurrence_info
 	cmpq FB,FB_ub
 nIcal	pslld $1,invpq

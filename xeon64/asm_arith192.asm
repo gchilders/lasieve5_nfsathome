@@ -20,6 +20,9 @@ dnl asm_add192_ui(b,a): b+=a mod N, a is ulong
 dnl asm_mulm192(): prod=f1*f2 mod N
 dnl function_head(asm_sqm192)
 dnl
+
+#include "underscore.h"
+
 .comm montgomery_modulo_n,8
 .comm montgomery_inv_n,8
 dnl
@@ -49,7 +52,9 @@ function_head(asm_sub192_3)
 	movq 8(op1),%rcx
 	xorq %r8,%r8
 	subq (op2),%rax
-	movq montgomery_modulo_n,%r11
+dnl smjs	movq montgomery_modulo_n,%r11
+	movq montgomery_modulo_n(%rip),%r11
+
 	movq $0,%r9
 	sbbq 8(op2),%rcx
 	movq 16(op1),%r10
@@ -81,7 +86,9 @@ function_head(asm_half192)
 	ret
 dnl a is odd, compute (a+N)/2
 half_odd192:
-	movq montgomery_modulo_n,%r8
+dnl smjs	movq montgomery_modulo_n,%r8
+	movq montgomery_modulo_n(%rip),%r8
+
 	addq (%r8),%rax
 	adcq 8(%r8),%rcx
 	adcq 16(%r8),%rdx
@@ -102,7 +109,9 @@ dnl asm_add192(b,a): b+=a mod N
 function_head(asm_add192)
 	movq (rop),%rax
 	movq 8(rop),%rcx
-	movq montgomery_modulo_n,%r11
+dnl smjs	movq montgomery_modulo_n,%r11
+	movq montgomery_modulo_n(%rip),%r11
+
 	movq (%r11),%r8
 	movq 8(%r11),%r9
 	subq %r8,%rax
@@ -153,7 +162,9 @@ dnl first multiplication
 	movq %rdx,res1
 	movq 8(op1),%rax
 	mulq h
-	movq montgomery_inv_n,aux
+dnl smjs	movq montgomery_inv_n,aux
+	movq montgomery_inv_n(%rip),aux
+
 	movq %r14,-40(%rsp)
 	movq %r15,-48(%rsp)
 	movq $0,res2
@@ -163,7 +174,9 @@ dnl first multiplication
 	movq 16(op1),%rax
 	mulq h
 	imulq res0,aux
-	movq montgomery_modulo_n,n
+dnl smjs	movq montgomery_modulo_n,n
+	movq montgomery_modulo_n(%rip),n
+
 	movq (n),n0
 	movq 8(n),n1
 	movq 16(n),n2
@@ -203,7 +216,9 @@ dnl second multiplication
 	adcq $0,res4
 	movq 16(op1),%rax
 	mulq h
-	movq montgomery_inv_n,aux
+dnl smjs	movq montgomery_inv_n,aux
+	movq montgomery_inv_n(%rip),aux
+
 	imulq res1,aux
 	addq %rax,res3
 	adcq %rdx,res4
@@ -241,7 +256,8 @@ dnl third multiplication
 	adcq $0,res5
 	movq 16(op1),%rax
 	mulq h
-	movq montgomery_inv_n,aux
+dnl smjs	movq montgomery_inv_n,aux
+	movq montgomery_inv_n(%rip),aux
 	imulq res2,aux
 	subq n0,res3
 	sbbq n1,res4

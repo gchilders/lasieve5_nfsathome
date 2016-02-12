@@ -49,7 +49,8 @@ lasched_fbi_loop:
 	cmpl ijd,ij_ubd
 	movl ijd,aux0d
 	movl ijd,aux1d
-	prefetch 128(ri)
+dnl smjs	prefetch 128(ri)
+	prefetcht0 128(ri)
 	jbe lasched0_ijloop_end
 	movl ad,v0d
 	negl ad
@@ -82,7 +83,8 @@ ifelse(nt_sched,1,`
 	movl ijd,aux1d
 	ja lasched0_ij_loop
 lasched0_ijloop_end:
-	prefetch 64(ij_ptr)
+dnl smjs	prefetch 64(ij_ptr)
+	prefetcht0 64(ij_ptr)
 	subl ij_ubd,ijd
 	leaq 8(ri),ri
 	movl ijd,(ij_ptr)
@@ -122,7 +124,8 @@ lasched0_1_fbi_loop:
 	cmpl ijd,ij_ubd
 	movl ijd,aux0d
 	movl ijd,aux1d
-	prefetch 128(ri)
+dnl smjs	prefetch 128(ri)
+	prefetcht0 128(ri)
 	jbe lasched0_1_ijloop_end
 	movl ad,v0d
 	negl ad
@@ -152,7 +155,8 @@ lasched0_1_ij_loop:
 	movl ijd,aux1d
 	ja lasched0_1_ij_loop
 lasched0_1_ijloop_end:
-	prefetch 64(ij_ptr)
+dnl smjs	prefetch 64(ij_ptr)
+	prefetcht0 64(ij_ptr)
 	subl ij_ubd,ijd
 	leaq 8(ri),ri
 	movl ijd,(ij_ptr)

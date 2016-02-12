@@ -1,4 +1,4 @@
-define(l1_bits,16)dnl
+define(l1_bits,15)dnl
 define(n_i,eval(2**n_i_bits))dnl
 define(n_i_mask,eval(n_i-1))dnl
 define(l1_size,eval(2**l1_bits))dnl
@@ -11,6 +11,5 @@ define(`forloop',
      		   `define(`$1', incr($1))_forloop(`$1', `$2', `$3', `$4')')')
 define(function_head,.text
 	.p2align 4`,,'15
-.globl $1
-	.type	$1`,' @function
-$1:)dnl
+.globl _$1
+_$1:)dnl

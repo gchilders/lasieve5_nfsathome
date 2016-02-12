@@ -10,6 +10,8 @@
 # Written by T. Kleinjung
 # Modifications by J. Franke
 
+#include "underscore.h"
+
 define(relptr,%rdi)dnl
 define(minus,%rsi)dnl
 define(qx_arg,%rdx)dnl
@@ -28,10 +30,8 @@ define(aux4,%r12)dnl
 define(aux4d,%r12d)dnl
 define(aux5,%r13)dnl
 define(aux5w,%r13w)dnl
+define(aux6,%r14)dnl
 
-	.align 16
-.globl asm_td
-	.type    asm_td,@function
 # mm0: p,p
 # mm1: inv,inv
 # mm2: s1,s2
@@ -39,10 +39,25 @@ define(aux5w,%r13w)dnl
 # mm4: computing
 # mm5: 0
 
-asm_td:
+	.align 16
+ifelse(windows,`1',
+`.globl asm_td
+        .def    asm_td; .scl    2;      .type   32;     .endef
+asm_td:'
+,osx,`1',
+`.globl _asm_td
+_asm_td:'
+,linux,`1',
+`.globl asm_td
+        .type    asm_td,@function
+asm_td:'
+,)dnl
+
 	pushq %rbx
 	pushq %r12
 	pushq %r13
+dnl smjs added
+	pushq %r14
 	movq qx_arg,qx
 	movzwq (relptr),%rax      # ind
 	movq %rax,%rcx
@@ -79,11 +94,15 @@ dnl Calculate product of primes found by sieving in %rax
 #	
 #prodend:
 
+dnl smjs	movzwq mpqs_td_begin(%rip),%rcx
 	movzwq mpqs_td_begin(%rip),%rcx
 
-	movq $mpqs_FB_inv_info,aux3
-	movq $mpqs_FB_start,aux2
+dnl smjs	movq $mpqs_FB_inv_info,aux3
+dnl smjs	movq $mpqs_FB_start,aux2
+	leaq mpqs_FB_inv_info(%rip),aux3
+	leaq mpqs_FB_start(%rip),aux2
 
+dnl smjs	movw mpqs_nFBk_1(%rip),aux5w
 	movw mpqs_nFBk_1(%rip),aux5w
 	addw $4,aux5w
 
@@ -179,8 +198,13 @@ dnl found divisor
 	jmp loop2
 
 prod:
-	movq $mpqs_FB,aux1
+dnl smjs	movq $mpqs_FB,aux1
+	leaq mpqs_FB(%rip),aux1
+
+
+dnl smjs	movzwq mpqs_nFBk_1(%rip),%rdx
 	movzwq mpqs_nFBk_1(%rip),%rdx
+
 	addq %rdx,%rdx
 	addq %rdx,%rdx
 	subq %rdx,aux1
@@ -217,7 +241,9 @@ posloop:
 	incq nr
 	cmpq $27,nr
 	jnc gotonext
+dnl smjs	movw mpqs_nFBk_1(%rip),%cx
 	movw mpqs_nFBk_1(%rip),%cx
+
 	movw %cx,8(relptr,nr,2)
 	shrq $1,qx
 	jmp posloop
@@ -246,7 +272,11 @@ division:
 	incq %rcx
 	movl aux3d,%eax
 	cmpq %rcx,qx
-	movzbl mpqs_256_inv_table(%rdx),aux2d
+     
+dnl smjs	movzbl mpqs_256_inv_table(%rdx),aux2d
+	leaq mpqs_256_inv_table(%rip),aux6
+	movzbl (aux6,%rdx),aux2d
+
 	adcq $0,aux5
 	mull aux2d
 	testq aux5,aux5
@@ -269,8 +299,13 @@ dnl	call zeitB
 dnl	movq aux5,%rdi
 
 # trial divison of sieved primes
-	movq $mpqs_FB_inv,aux2
-	movzwq mpqs_nFBk_1,%rcx
+
+dnl smjs	movq $mpqs_FB_inv,aux2
+	leaq mpqs_FB_inv(%rip),aux2
+
+dnl smjs	movzwq mpqs_nFBk_1,%rcx
+	movzwq mpqs_nFBk_1(%rip),%rcx
+
 	addq %rcx,%rcx
 	addq %rcx,%rcx
 	subq %rcx,aux2
@@ -290,7 +325,8 @@ divloop:
 	mull %ecx
 	testl %edx,%edx
 	jnz tdloop
-	cmpw $27,nr
+dnl	smjs cmpw $27,nr 
+	cmpw $27,nrw
 	jnc gotonext
 	movl aux4d,%eax
 	movw aux5w,10(relptr,nr,2)
@@ -304,9 +340,14 @@ tdend:
 	cmpl $1,qxd
 	jz end
 
-	movq $mpqs_FBk_inv,aux2
-	movq $mpqs_FBk,aux1
+dnl smjs	movq $mpqs_FBk_inv,aux2
+dnl smjs	movq $mpqs_FBk,aux1
+	leaq mpqs_FBk_inv(%rip),aux2
+	leaq mpqs_FBk(%rip),aux1
+
+dnl smjs	movzwq mpqs_nFBk(%rip),nr1
 	movzwq mpqs_nFBk(%rip),nr1
+
 	incq nr1
 tdloopk:
 	decq nr1
@@ -321,10 +362,12 @@ divloopk:
 	mull %ecx
 	testl %edx,%edx
 	jnz tdloopk
-	cmpw $27,nr
+dnl smjs	cmpw $27,nr
+	cmpw $27,nrw
 	jnc gotonext
 	movl aux4d,%eax
-	movw nr1,10(relptr,nr,2)
+dnl smjs	movw nr1,10(relptr,nr,2)
+	movw nr1w,10(relptr,nr,2)
 	incq nr
 	movl aux4d,qxd
 	jmp divloopk
@@ -334,11 +377,20 @@ tdendk:
 	cmpl $1,%eax
 	jz end
 
-	movq $mpqs_FB_A_inv,aux2
-	movq $mpqs_Adiv_all,aux1
+dnl smjs	movq $mpqs_FB_A_inv,aux2
+dnl smjs	movq $mpqs_Adiv_all,aux1
+	leaq mpqs_FB_A_inv(%rip),aux2
+	leaq mpqs_Adiv_all(%rip),aux1
+
+dnl smjs	movw mpqs_nFB(%rip),aux5w
         movw mpqs_nFB(%rip),aux5w
+
+dnl smjs        addw mpqs_nFBk(%rip),aux5w
         addw mpqs_nFBk(%rip),aux5w
-	movzwq mpqs_nAdiv_total,nr1
+
+dnl smjs	movzwq mpqs_nAdiv_total,nr1
+	movzwq mpqs_nAdiv_total(%rip),nr1
+
 	incq nr1
 tdloopa:
 	decq nr1
@@ -354,7 +406,8 @@ divloopa:
 	testl %edx,%edx
 	jnz tdloopa
 	movl aux4d,%eax
-	cmpw $27,nr
+dnl smjs	cmpw $27,nr
+	cmpw $27,nrw
 	jnc gotonext
 	addw nr1w,aux5w
 	movw aux5w,10(relptr,nr,2)
@@ -370,6 +423,8 @@ end:
 	movw nrw,8(relptr)
 	movl qxd,%eax
 	emms	
+dnl smjs added
+	popq %r14
 	popq %r13
 	popq %r12
 	popq %rbx
@@ -378,6 +433,8 @@ end:
 gotonext:
 	xorq %rax,%rax
 	emms
+dnl smjs added
+	popq %r14
 	popq %r13
 	popq %r12
 	popq %rbx

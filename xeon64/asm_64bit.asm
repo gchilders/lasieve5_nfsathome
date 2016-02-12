@@ -7,7 +7,10 @@ dnl with this program; see the file COPYING.  If not, write to the Free
 dnl Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 dnl 02111-1307, USA.
 
+#include "underscore.h"
+
 function_head(asm_modadd64)
+dnl smjs	movq modulo64(%rip),%rdx
 	movq modulo64(%rip),%rdx
 	movq %rdi,%rax
 	subq %rdx,%rax
@@ -20,6 +23,7 @@ function_head(asm_modadd64)
 function_head(asm_modmul64)
 	movq %rdi,%rax
 	mulq %rsi
+dnl smjs	movq modulo64(%rip),%rcx
 	movq modulo64(%rip),%rcx
 	divq %rcx
 	movq %rdx,%rax

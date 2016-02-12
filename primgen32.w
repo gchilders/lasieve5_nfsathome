@@ -16,6 +16,7 @@ methods we use, it makes sense to execute it on startup rather than to waste
 hard disk space on storing its results.
 
 @(primgen32.c@>=
+#include <string.h>
 #include <math.h>
 #include <sys/types.h>
 #include <limits.h>

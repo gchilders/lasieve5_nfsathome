@@ -11,6 +11,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 /* Written by T. Kleinjung, with some modifications by J. Franke. */
 
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -454,7 +455,8 @@ static u32_t mpqs3_powmod_mm(u32_t a, u32_t e, u32_t p32, u32_t mmi, u32_t one)
 static ushort mpqs3_sqrt_init(ushort p)
 {
   ushort e, u, i, j;
-  u32_t g, b;
+  // SMJS Initialised g to stop compiler warning (probably if p was 0 which shouldn't happen)
+  u32_t g = 0, b;
 
   if (p&2) return 0;
   if (p&4) return mpqs3_powmod(2,(p-1)>>2,p);
@@ -783,6 +785,8 @@ static void mpqs3_generate_FB()
 //printf("pmax: %u\n",mpqs3_pmax);
 }
 
+// SMJS Moved outside func because qsort comp func needs it
+static double *alog;
 
 static int mpqs3_SI_init()
 {
@@ -1123,16 +1127,11 @@ mpqs3_Adiv_all_sq_inv[j]=s;
 
 {
 /* experimental */
-  double *alog;
+// SMJS Make static outside func because qsort comp func needs it  double *alog;
   ushort tmp;
   u32_t *asort;
 
 {
-int A_index_cmp(const void *a, const void *b)
-{
-  if (alog[*((u32_t *)(a))]>=alog[*((u32_t *)(b))]) return 1;
-  return -1;
-}
 
 /* compute mask for choice of A-divisors */
   j=0;
@@ -1254,6 +1253,12 @@ int A_index_cmp(const void *a, const void *b)
   return 1;
 }
 
+// SMJS Moved from inside above function
+int A_index_cmp(const void *a, const void *b)
+{
+  if (alog[*((u32_t *)(a))]>=alog[*((u32_t *)(b))]) return 1;
+  return -1;
+}
 
 static int mpqs3_next_pol()
 {
@@ -1392,8 +1397,10 @@ zeitA(13);
 //zeitB(36);
 #else
 
-//#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
-//   h32+=hh32*p; h32=h32>>16
+/*
+#define MMREDUCE hh32=(h32&0x0000ffff)*mmi; hh32&=0x0000ffff; \
+   h32+=hh32*p; h32=h32>>16
+*/
 {
     u32_t mmi, h32, hh32, p32;
     u32_t cc1, cc2, bbb;
@@ -2169,6 +2176,7 @@ zeitA(11);
 #ifdef ASM_MPQS3_TDSIEVE
 //zeitA(42);
 {
+#error ASM_MPQS3_TDSIEVE
   ushort *buf[256];
   u32_t n;
 
@@ -2703,7 +2711,8 @@ zeitB(8);
 }
 
 
-static int mpqs3_rowechelon()
+//SMJS Changed to void to stop compiler complaint, no return statement but called as void static int mpqs3_rowechelon()
+static void mpqs3_rowechelon()
 {
   u32_t i, j, k, l, t, k64, col, row, r0, c0, zz;
   u64_t tmp, tab[16];

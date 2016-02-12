@@ -132,31 +132,31 @@ void asm_sqm192(ulong *x,ulong *y)
 #ifndef HAVE_ASM_INV
 int asm_inv64(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #ifdef ULONG_HAS_32BIT
 int asm_inv96(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 #endif
 
 int asm_inv128(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #ifdef ULONG_HAS_32BIT
 int asm_inv160(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 #endif
 
 int asm_inv192(ulong *res, ulong *b)
 {
-  asm_invert(res,b);
+  return asm_invert(res,b);
 }
 
 #endif
