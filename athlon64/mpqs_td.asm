@@ -39,7 +39,7 @@ define(aux6,%r14)dnl
 # mm4: computing
 # mm5: 0
 
-	.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 ifelse(windows,`1',
 `.globl asm_td
         .def    asm_td; .scl    2;      .type   32;     .endef

@@ -8,9 +8,11 @@
 # 02111-1307, USA.
 
 
-#gcc on osx
-CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+#gcc-4.9 on osx 10.9
+#Current
+#CFLAGS= -m64 -Ofast -march=native  -fomit-frame-pointer -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 #CFLAGS= -m64 -Ofast -march=native -I/usr/local/Cellar/gmp4/4.3.2/include -Wa,-q
+#CFLAGS= -m64 -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -I. -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 
 #windows
 #CFLAGS= -Wall  -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable  -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -I. -Ic:/users/steve/progs/local/include
@@ -20,10 +22,10 @@ CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/includ
 #CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
 #CFLAGS= -m64 -Ofast -march=corei7 -I/Users/searle/progs/ensc-dependencies/include 
 #clang for profiling
-#CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
+#CFLAGS= -g -march=native -I/Users/searle/progs/ensc-dependencies/include
 
 #linux
-#CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
+CFLAGS= -m64 -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
 
 include ../paths
 

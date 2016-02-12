@@ -23,7 +23,8 @@ define(xc,%ecx)dnl
 define(yc,%r8d)dnl
 define(p,%r9d)dnl
 dnl Number of trial subtractions before doing a division
-define(nts,15)dnl
+dnl smjs started at 15
+define(nts,5)dnl
 
 function_head(asm_modinv32b)
 	testl x,x

@@ -34,9 +34,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 @
 @c
-// SMJS
 #include <assert.h>
+#ifndef _WIN64
 #include <fnmatch.h>
+#endif
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -685,7 +686,10 @@ void spq_init(mpz_t spq, mpz_t last)
       nf=1;
       tmpf[0]=mpz_get_ull(aux1);
     } else {
-      if (nb>96) nf=mpqs3_factor(aux1,64,&mf);
+
+      if (nb>96) {
+        nf=mpqs3_factor(aux1,64,&mf);
+      }
       else nf=mpqs_factor(aux1,64,&mf);
       if (nf<0) gmp_fprintf(stderr,"spq_init mpqs failed for %Zd\n",aux1);
       if (nf==0) continue; /* One factor exceeded 64 bit limit. */
@@ -1124,7 +1128,6 @@ for (ind=0; ind<n_curspq_p; ind++) {
   }
 #endif
   skip_blanks_comments(&input_line,&input_line_alloc,input_data);
-  printf("Input line = %s\n", input_line);
   if(input_line == NULL ||
      sscanf(input_line,"%hu %f %f %hu %hu\n",&(sieve_min[1]),
             FB_bound+1,&(sieve_report_multiplier[1]),
@@ -1134,7 +1137,6 @@ for (ind=0; ind<n_curspq_p; ind++) {
     errprintf("eg. 20     1e6    3.2                  30             50\n");
     complain("lacking from input file %s\n",basename);
   }
-  printf("Input line = %s\n", input_line);
   if(fscanf(input_data,"%hu %f %f %hu %hu\n",&(sieve_min[0]),
             FB_bound,&(sieve_report_multiplier[0]),
             &(max_primebits[0]),&(max_factorbits[0])) != 5) {

@@ -65,7 +65,7 @@ dnl Note sched_tds_buffer is in the register containing the return value
 	movq sched,(sched_arg)
 	ret
 
-.align 4
+ifelse(osx,`1',`.align 2',`.align 4')
 stds_search_divisor:
 	movzwq (sched),si0
 	movb (sieve_interval,si0),svo

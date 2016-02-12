@@ -57,7 +57,7 @@ dnl smjs	movq mpqs3_sievearray(%rip),sieve_interval
  call zeitA
 .endif
 
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 mainloop:
 	movzwq (FB),prime   # p
 	cmpq prime,sl4
@@ -468,7 +468,7 @@ dnl smjs	movq mpqs3_sievearray(%rip),sieve_interval
  call zeitA
 .endif
 
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 mainloop8a:
 	movzwq (FB0),prime   # p
 	testq prime,prime

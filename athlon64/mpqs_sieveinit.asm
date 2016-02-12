@@ -44,7 +44,7 @@ outerloop:
 	leaq 4(tab),tab
 	mulq mask1
 	movd %rax,mask
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 innerloop:
 	movq (tptr),%mm0
 	movq 8(tptr),%mm1
@@ -91,7 +91,7 @@ outerloop16:
 	leaq 4(tab),tab
 	mulq mask1
 	movd %rax,mask
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 innerloop16:
 	movq (tptr),%mm0
 	movq 8(tptr),%mm1

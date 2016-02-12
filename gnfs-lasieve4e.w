@@ -60,6 +60,7 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 // SMJS Added
 #include <assert.h>
 #include <strings.h>
+#include <getopt.h>
 // SMJS Windows gethostname is in:
 //#include <winsock2.h>
 // but including that leads to conflicts for u32_read
@@ -923,7 +924,41 @@ useful to store |spq_x|, the product of |i_shift| and |spq_i| modulo $q$.
 
   append_output=0;
 
-  while((option=getopt(argc,argv,"C:FJ:L:M:N:P:RS:Z:ab:c:f:hi:kn:o:q:rt:vz"))!=-1) {
+// SMJS Note I've switched to getopt_long, not because I care about the 
+//      long args, but instead because on Mac getopt seemed to be fixed
+//      in POSIXLY_CORRECT mode, whereas getopt_long can be configured
+//      and is by default in GNU style, allowing permuting of non
+//      flag args
+  static struct option longopts[] = {
+             { "spq_count",     required_argument,    NULL,     'C' },
+             { "force_afb",     no_argument,          NULL,     'F' },
+             { "jbits",         required_argument,    NULL,     'J' },
+             { "loadcom",       required_argument,    NULL,     'L' },
+             { "firstmpqsside", required_argument,    NULL,     'M' },
+             { "Procnum",       required_argument,    NULL,     'N' },
+             { "firstpspside",  required_argument,    NULL,     'P' },
+             { "resume",        no_argument,          NULL,     'R' },
+             { "rescalerange",  required_argument,    NULL,     'Z' },
+             { "skew",          required_argument,    NULL,     'S' },
+             { "algebraicspq",  no_argument,          NULL,     'a' },
+             { "basename",      required_argument,    NULL,     'b' },
+             { "sievecount",    required_argument,    NULL,     'c' },
+             { "firstspq",      required_argument,    NULL,     'f' },
+             { "help",          no_argument,          NULL,     'h' },
+             { "firstsieveside",required_argument,    NULL,     'i' },
+             { "keepfb",        no_argument,          NULL,     'k' },
+             { "procnum",       required_argument,    NULL,     'n' },
+             { "outfile",       required_argument,    NULL,     'o' },
+             { "spqside",       required_argument,    NULL,     'q' },
+             { "rationalspq",   no_argument,          NULL,     'r' },
+             { "firsttdside",   required_argument,    NULL,     't' },
+             { "verbose",       no_argument,          NULL,     'v' },
+             { "compress",      required_argument,    NULL,     'z' },
+             { NULL,            0,                    NULL,       0 }
+  };
+
+  while((option=
+        getopt_long(argc,argv,"C:FJ:L:M:N:P:RS:Z:ab:c:f:hi:kn:o:q:rt:vz",longopts,NULL))!=-1) {
     switch(option) {
     case 'C':
       if (sscanf(optarg,"%u",&spq_count)!=1)  Usage(argv[0]);
@@ -3505,9 +3540,14 @@ schedsieve(medsched_logs[s],n_medsched_pieces[s],med_sched[s],sieve_interval);
 #ifdef ASM_SCHEDSIEVE
     schedsieve(x,sieve_interval,med_sched[s][l],med_sched[s][l+1]);
 #else
+//    fprintf(stderr,"sched size = %d x = %d\n",
+//            med_sched[s][l+1] - (med_sched[s][l]+MEDSCHED_SI_OFFS),x);
     for(schedule_ptr=med_sched[s][l]+MEDSCHED_SI_OFFS;
         schedule_ptr+3*SE_SIZE<med_sched[s][l+1];
         schedule_ptr+=4*SE_SIZE) {
+ //     fprintf(stderr,"sptr vals = %d %d %d %d\n",*schedule_ptr,
+ //             *(schedule_ptr+SE_SIZE),*(schedule_ptr+2*SE_SIZE),
+ //             *(schedule_ptr+3*SE_SIZE));
       sieve_interval[*schedule_ptr]+=x;
       sieve_interval[*(schedule_ptr+SE_SIZE)]+=x;
       sieve_interval[*(schedule_ptr+2*SE_SIZE)]+=x;
@@ -4961,11 +5001,15 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
   if(primality_tests()==0) return;
 #endif
 
+#ifndef NO_TD_CLOCK
   cl=clock();
+#endif
   n_cof++;
 #if 1
   cferr=cofactorisation(&strat,large_primes,large_factors,max_primebits,nlp,FBb_sq,FBb_cu);
+#ifndef NO_TD_CLOCK
   mpqs_clock+=clock()-cl;
+#endif
   if (cferr<0) {
     fprintf(stderr,"cofactorisation failed for ");
     mpz_out_str(stderr,10,large_factors[0]);
@@ -5041,7 +5085,9 @@ output_tdsurvivor(fbp_buf0,fbp_buf0_ub,fbp_buf1,fbp_buf1_ub,lf0,lf1)
       mpz_set(large_primes[s1][i],mf[i]);
     nlp[s1]=nf;
   }
+#ifndef  NO_TD_CLOCK
   mpqs_clock+=clock()-cl;
+#endif
   if(s!=2) return;
 #endif
 

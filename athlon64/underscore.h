@@ -71,6 +71,8 @@
 #define mpqs3_nFB _mpqs3_nFB
 #define mpqs3_nAdiv_total _mpqs3_nAdiv_total
 
+#define asmzeitcounter _asmzeitcounter
+
 #endif
 
 #endif

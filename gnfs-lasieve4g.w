@@ -34,9 +34,10 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 
 @
 @c
-// SMJS
 #include <assert.h>
+#ifndef _WIN64
 #include <fnmatch.h>
+#endif
 
 #include <stdio.h>
 #include <sys/types.h>

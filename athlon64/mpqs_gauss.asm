@@ -52,7 +52,7 @@ dnl smjs	movl mpqs_gauss_n32(%rip),%edx
 dnl smjs	movl mpqs_gauss_n32(%rip),%eax
 	movl mpqs_gauss_n32(%rip),%eax
 
-.align 16 
+ifelse(osx,`1',`.align 4',`.align 16')
 loopj:        # ? cycles per iteration
 	incl %ecx
 entryj:
@@ -130,7 +130,7 @@ dnl smjs	movl mpqs_gauss_n32(%rip),%eax
 	movq $2,%rdx
 	jz searchloopAend
 	xorl %ecx,%ecx
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 searchloopA:
 	movl (%rsi),%r9d
 	andl %r8d,%r9d
@@ -150,7 +150,7 @@ dnl smjs	cmpl mpqs_gauss_m(%rip),%ecx
 
 	leaq (%rsi,%rax,4),%rsi
 	jnc searchloopBend
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 searchloopB:
 	movl (%rsi),%r9d
 	andl %r8d,%r9d
@@ -186,7 +186,7 @@ dnl smjs	movq mpqs_gauss_row(%rip),%rsi
 	cmpl $6,%edx
 	jc entry3
 # generic code for >192 bit
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 outerloop0:
 	movzwq (%r8),%r9
 dnl smjs	movq mpqs_gauss_row(%rip),%rax

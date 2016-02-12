@@ -19,6 +19,8 @@ Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 //#define NO_TD_CLOCK
 // SMJS Seems a bit faster with HAVE_CMOV defined
 #define HAVE_CMOV
+// SMJS For this one remember you need to edit asm_sub_n64 name in assembly
+//#define ASM_SUBN
 
 #ifdef _WIN64
 #define ASM_ATTR   __attribute__((sysv_abi))

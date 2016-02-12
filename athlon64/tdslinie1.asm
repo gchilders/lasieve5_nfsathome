@@ -67,7 +67,7 @@ tdslinie1_ende:
 	popq %rbx
 	ret
 
-	.align 8
+ifelse(osx,`1',`.align 3',`.align 8')
 tdslinie1_suche:
 	movzwq proot_src,auxreg
 	movzwq prime_src,prime

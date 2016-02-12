@@ -59,7 +59,11 @@ void casm_copy192(ulong *x, ulong *y)
 
 // SMJS For Windows need either all implemented in asm or non, so use sub_n64 in c rather than asm for 64
 //void casm_sub_n64(ulong *x, ulong *y)
+#ifdef ASM_SUBN
+void casm_sub_n64(ulong *x, ulong *y)
+#else
 void asm_sub_n64(ulong *x, ulong *y)
+#endif
 {
   if (x[0]>y[0]) {
     x[0]-=y[0];
@@ -70,7 +74,11 @@ void asm_sub_n64(ulong *x, ulong *y)
   }
 }
 
+#ifdef ASM_SUBN
+void ASM_ATTR asm_sub_n128(ulong *x, ulong *y)
+#else
 void asm_sub_n128(ulong *x, ulong *y)
+#endif
 {
   ulong carry=0, i;
 
@@ -85,7 +93,11 @@ void asm_sub_n128(ulong *x, ulong *y)
   }
 }
 
+#ifdef ASM_SUBN
+void ASM_ATTR asm_sub_n192(ulong *x, ulong *y)
+#else
 void asm_sub_n192(ulong *x, ulong *y)
+#endif
 {
   ulong carry=0, i;
 

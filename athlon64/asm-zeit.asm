@@ -1,3 +1,5 @@
+#include "underscore.h"
+
 function_head(asmgetclock)
 	rdtsc
 	shlq $32,%rdx

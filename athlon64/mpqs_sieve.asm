@@ -44,7 +44,7 @@ dnl smjs	movq mpqs_sievearray(%rip),sieve_interval
 	movq sieve_interval,sieveend
 	addq sl,sieveend
 
-.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 mainloop:
 	movzwq (FB),prime   # p
 	cmpq prime,sl4

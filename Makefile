@@ -13,20 +13,21 @@
 
 # SMJS various ones I've used
 
-# For gcc installed using brew on osx 10.9 (note -Wa,-q which specifies using clang as rather than system one)
-CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+# For gcc-4.9 installed using brew on osx 10.9 (note -Wa,-q which specifies using clang as rather than system one)
+# Current
+#CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 #CFLAGS= -m64 -Ofast -march=corei7 -mtune=corei7 -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 
 # windows one
 #CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -funroll-loops -Ic:/users/steve/progs/local/include 
 
 # linux
-#CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -I/Users/searle/progs/ensc-dependencies/include
+CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -I/Users/searle/progs/ensc-dependencies/include
 
 #clang
 #CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
 #clang for profiling
-#CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
+#CFLAGS= -O0 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
 
 #endif
 
@@ -50,6 +51,8 @@ CTANGLE=ctangle
 .SUFFIXES:
 
 .SECONDARY: *.c *.o *.a
+#For profiling on mac
+#.SECONDARY: *.c *.o *.a gnfs-lasieve4eI14.o
 
 SRCFILES=fbgen.c fbgen.h lasieve-prepn.w la-cs.w if.w gmp-aux.w mpz-ull.w \
 	fbgen64.c fbgen64.h \
@@ -246,4 +249,4 @@ realclean: clean
 	rm -f asm/lasched.h asm/medsched.h asm/mpz-trialdiv.h asm/siever-config.h
 
 binclean: realclean
-	rm -f gnfs-lasieve4I1* forumexs/*.out readmeex/*.gz
+	rm -f gnfs-lasieve4I1* forumexs/*.out readmeex/*.gz mpqs3test mpqsstat ecmstat pm1stat pm1test ecmtest

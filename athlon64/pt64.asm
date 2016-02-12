@@ -12,7 +12,7 @@ define(t,%r11)dnl
 
 #include "underscore.h"
 
-	.align 8
+ifelse(osx,`1',`.align 3',`.align 8')
 modsq64:
 	movq t,%rax
 	mulq t
@@ -106,12 +106,12 @@ pt64_RMtests:
 	call modsq64
 	jmp pt64_RMtests
 
-	.align 8
+ifelse(osx,`1',`.align 3',`.align 8')
 pt64_comp:
 	xorq %rax,%rax
 	ret
 
-	.align 8
+ifelse(osx,`1',`.align 3',`.align 8')
 pt64_prime:
 	movq $1,%rax
 	ret

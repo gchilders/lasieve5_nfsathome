@@ -91,7 +91,7 @@ lss_ende:
 	popq %rbx
 	ret
 
-.align 4
+ifelse(osx,`1',`.align 2',`.align 4')
 search_sievereport:
 	pmaxub %xmm7,%xmm0
 	pmaxub %xmm7,%xmm1
@@ -134,7 +134,8 @@ loop1:
 	leaq (sieve_interval,si_ptr),si_ptr
 	jmp i_loop_entry2
 
-.align 4
+
+ifelse(osx,`1',`.align 2',`.align 4')
 store_many_sievereports:
 	subq sieve_interval,si_ptr
 	movq si_ptr,auxreg

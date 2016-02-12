@@ -55,7 +55,7 @@ MMX_TdLoop1:
 	leaq 4(prime_buffer),prime_buffer
 	jz MMX_TdLoop
 	jmp MMX_TdLoop1
-.align 4
+ifelse(osx,`1',`.align 2',`.align 4')
 MMX_TdEnde:
 	movq prime_buffer,%rax
 	ret

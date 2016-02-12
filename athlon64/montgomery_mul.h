@@ -18,7 +18,11 @@ void ASM_ATTR (*asm_half)(ulong *);
 void ASM_ATTR (*asm_sub)(ulong *,ulong *,ulong *);
 void ASM_ATTR (*asm_add2)(ulong *,ulong *);
 
+#ifdef ASM_SUBN
+void ASM_ATTR (*asm_sub_n)(ulong *,ulong *);
+#else
 void (*asm_sub_n)(ulong *,ulong *);
+#endif
 
 void (*asm_squmod)(ulong *,ulong *);
 void (*asm_diff)(ulong *,ulong *,ulong *);
@@ -37,7 +41,12 @@ void ASM_ATTR asm_copy64(ulong *,ulong *);
 void ASM_ATTR asm_half64(ulong *);
 void ASM_ATTR asm_add64(ulong *,ulong *);
 
+#ifdef ASM_SUBN
+void ASM_ATTR asm_sub_n64(ulong *,ulong *);
+#else
 void asm_sub_n64(ulong *,ulong *);
+#endif
+
 void asm_add64_ui(ulong *,ulong);
 void asm_sqm64(ulong *,ulong *);
 void asm_diff64(ulong *,ulong *,ulong *);
@@ -51,7 +60,12 @@ void ASM_ATTR asm_half128(ulong *);
 void ASM_ATTR asm_mulm128(ulong *,ulong *,ulong *);
 void ASM_ATTR asm_add128(ulong *,ulong *);
 
+#ifdef ASM_SUBN
+void ASM_ATTR asm_sub_n128(ulong *,ulong *);
+#else
 void asm_sub_n128(ulong *,ulong *);
+#endif
+
 void asm_sqm128(ulong *,ulong *);
 void asm_diff128(ulong *,ulong *,ulong *);
 void asm_add128_ui(ulong *,ulong);
@@ -65,7 +79,12 @@ void ASM_ATTR asm_add192(ulong *,ulong *);
 void ASM_ATTR asm_copy192(ulong *,ulong *);
 void ASM_ATTR asm_half192(ulong *);
 
+#ifdef ASM_SUBN
+void ASM_ATTR asm_sub_n192(ulong *,ulong *);
+#else
 void asm_sub_n192(ulong *,ulong *);
+#endif
+
 void asm_sqm192(ulong *,ulong *);
 void asm_diff192(ulong *,ulong *,ulong *);
 void asm_add192_ui(ulong *,ulong);

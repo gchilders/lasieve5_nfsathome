@@ -30,7 +30,7 @@ define(nts,15)dnl
 
 
 .text
-	.align 4
+ifelse(osx,`1',`.align 2',`.align 4')
 ifelse(windows,`1',
 `.globl asm_getbc
         .def    asm_getbc; .scl    2;      .type   32;     .endef

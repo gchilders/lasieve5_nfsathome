@@ -739,7 +739,7 @@ dnl mm3: ind,ind
 dnl mm4: computing
 dnl mm5: 0
 
-	.align 16
+ifelse(osx,`1',`.align 4',`.align 16')
 ifelse(windows,`1',
 `.globl asm3_td
         .def    asm3_td; .scl    2;      .type   32;     .endef
