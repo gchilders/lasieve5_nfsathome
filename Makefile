@@ -14,14 +14,14 @@
 # SMJS various ones I've used
 
 # For gcc installed using brew on osx 10.9 (note -Wa,-q which specifies using clang as rather than system one)
-CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
+# CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 #CFLAGS= -m64 -Ofast -march=corei7 -mtune=corei7 -I/Users/searle/progs/ensc-dependencies/include -Wa,-q
 
 # windows one
 #CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -funroll-loops -Ic:/users/steve/progs/local/include 
 
 # linux
-#CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -I/Users/searle/progs/ensc-dependencies/include
+CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops
 
 #clang
 #CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
@@ -30,7 +30,7 @@ CFLAGS= -m64 -Ofast -march=native -fomit-frame-pointer -funroll-loops -I/Users/s
 
 #endif
 
-GMP_LIB=-L/Users/searle/progs/ensc-dependencies/lib -lgmp
+GMP_LIB=-lgmp
 #For windows
 #GMP_LIB=-Lc:/Users/steve/progs/local/lib -lgmp -lws2_32
 #Using brew installed gmp

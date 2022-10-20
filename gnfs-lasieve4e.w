@@ -143,7 +143,6 @@ division survivors are done.
 
 #include "asm/lasched.h"
 #include "asm/medsched.h"
-#include "asm/MMX-TD.h"
 
 #define L1_SIZE (1UL<<L1_BITS)
 

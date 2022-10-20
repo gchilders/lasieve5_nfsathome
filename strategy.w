@@ -49,9 +49,6 @@ void print_strategy_stat();
 #include "ecm.h"
 #include "pm1.h"
 
-#include "mpqs.h"
-#include "mpqs3.h"
-
 extern char *input_line;
 extern size_t input_line_alloc;
 
