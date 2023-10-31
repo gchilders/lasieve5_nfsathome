@@ -5260,10 +5260,10 @@ int boincstart(int argc_init, char **argv)
 	fprintf(stderr, "work files resolved, now working\n");
 
 	//construct arg list
-	argv[argc_init++]="-R";
-	argv[argc_init++]=path_in;
 	argv[argc_init++]="-o";
 	argv[argc_init++]=path_out;
+	argv[argc_init++]="-R";
+	argv[argc_init++]=path_in;
 
 	for(i=0;i<argc_init;i++) {
 		fprintf(stderr,"-> %s\n",argv[i]);
@@ -5289,7 +5289,7 @@ void boincstatus(double percent)
 
 	if(boinc_time_to_checkpoint()) {
 		//c'est l'appli qui s'en occupe elle m?me
-		fflush(ofile);
+		fflush(g_ofile);
 		boinc_checkpoint_completed();
 	}
 }
