@@ -23,13 +23,14 @@
 #CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
 
 #linux
-CFLAGS= -m64 -Ofast -march=native
+CFLAGS= -m64 -Ofast -march=native -fcommon
 
 include ../paths
 
 CC=gcc $(CFLAGS)
 #CC=gcc-4.9 $(CFLAGS)
 #CC=clang $(CFLAGS)
+#CC=x86_64-w64-mingw32-gcc-10-posix $(CFLAGS)
 
 CTANGLE=ctangle
 #CTANGLE='c:/progra~2/cweb/bin/ctangle'

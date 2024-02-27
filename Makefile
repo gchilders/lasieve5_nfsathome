@@ -21,7 +21,7 @@
 #CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -funroll-loops -Ic:/users/steve/progs/local/include 
 
 # linux
-CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops
+CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -fcommon
 
 #clang
 #CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
@@ -43,6 +43,7 @@ include paths
 CC=gcc  $(CFLAGS)
 #CC=gcc-4.9  $(CFLAGS)
 #CC=clang  $(CFLAGS)
+#CC=x86_64-w64-mingw32-gcc-10-posix $(CFLAGS)
 
 CTANGLE=ctangle
 #CTANGLE='c:/progra~2/cweb/bin/ctangle.exe'

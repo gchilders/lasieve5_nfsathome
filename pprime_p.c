@@ -34,16 +34,13 @@ MA 02111-1307, USA. */
 
 #include <gmp.h>
 
-
 mpz_t mpz_compos_witness;
 static short witness_initialized=0;
 short have_compos_witness;
 
 // SMJS
-#ifndef _WIN64
 static int randInited = 0;
 static gmp_randstate_t randstate; 
-#endif
 
 static int
 possibly_prime (n, n_minus_1, x, y, q, k)
@@ -57,12 +54,10 @@ possibly_prime (n, n_minus_1, x, y, q, k)
   ulong i;
 
   // SMJS
-#ifdef _WIN64
   if (!randInited) {
     gmp_randinit_default(randstate);
     randInited = 1;
   }
-#endif
   // SMJS Ended added
 
   /* find random x s.t. 1 < x < n */
@@ -70,11 +65,7 @@ possibly_prime (n, n_minus_1, x, y, q, k)
     {
       // SMJS mpz_random missing from MPIR mpz_random (x, mpz_size (n));
       //  https://gmplib.org/manual/Integer-Random-Numbers.html#Integer-Random-Numbers
-#ifdef _WIN64
       mpz_urandomm (x, randstate, n);
-#else
-      mpz_random (x, mpz_size (n));
-#endif
       mpz_mmod (x, x, n);
     }
   while (mpz_cmp_ui (x, 1L) <= 0);
