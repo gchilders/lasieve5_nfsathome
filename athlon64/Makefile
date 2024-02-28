@@ -23,7 +23,7 @@
 #CFLAGS= -O1 -g -march=native -I/Users/searle/progs/ensc-dependencies/include
 
 #linux
-CFLAGS= -m64 -Ofast -march=native -fcommon
+CFLAGS= -m64 -O2 -march=native -fcommon
 
 include ../paths
 

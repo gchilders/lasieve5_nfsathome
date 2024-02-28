@@ -1886,6 +1886,8 @@ and |1/sqrt(sigma)|.
 	if(i_bits+j_bits<schedule_sizebits[j]) ns=1<<(i_bits+j_bits-L1_BITS);
 	else ns=1<<(schedule_sizebits[j]-L1_BITS);
 	schedules[s][i].n_strips=ns;
+	/* skip malformed schedules with lb > ub */
+	if (fbp_lb > fbp_ub) continue;
 
 	/* Allocate twice the amount predicted by Mertens law and the
 	   statistical independence of sieving events. */
@@ -1938,6 +1940,8 @@ SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430
 	    break;
 	}
 	fbi_ub=lb1;
+	/* skip empty schedules */
+	if ((n == 0) || (fbi_ub == fbi_lb)) continue;
 	schedules[s][i].n_pieces=n;
 	schedules[s][i].d=d;
 	n++;
@@ -1983,9 +1987,10 @@ SCHED_PATHOLOGY to http://mersenneforum.org/showthread.php?t=11430
 	i++;
       }
     }
-    if(i!=n_schedules[s])
-      Schlendrian("Expected to create %u  schedules on side %d, have %u\n",
-		  n_schedules[s],s,i);
+    if(i!=n_schedules[s]) {
+      printf("Warning: expected to create %u  schedules on side %d, have %u\n", n_schedules[s], s, i);
+      n_schedules[s] = i;
+    }
   }
   @<Allocate space for the schedule@>@;
   @<Prepare the medsched@>@;

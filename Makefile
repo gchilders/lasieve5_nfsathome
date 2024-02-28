@@ -21,7 +21,7 @@
 #CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Ofast -fomit-frame-pointer -march=corei7 -mtune=corei7 -funroll-loops -Ic:/users/steve/progs/local/include 
 
 # linux
-CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -Ofast -fomit-frame-pointer -march=native -funroll-loops -fcommon
+CFLAGS=-Wall -Wno-unused-variable -Wno-unused-function -O2 -fomit-frame-pointer -march=native -funroll-loops -fcommon
 
 #clang
 #CFLAGS= -Wall -Wno-unused-variable -Wno-unused-function -Ofast -march=native -I/Users/searle/progs/ensc-dependencies/include
